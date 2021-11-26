@@ -1,12 +1,22 @@
 # Ignore Gradle project-specific cache directory
+HELP.md
+target/
 .gradle
+!**/src/test/**
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
 
 # Ignore Gradle build output directory
 build
 # Ignore Gradle compiler temp directory
-bin
-.classpath
-.settings
+bin/
 SEQNO
 src/main/resources/rateprtservice.xml
 

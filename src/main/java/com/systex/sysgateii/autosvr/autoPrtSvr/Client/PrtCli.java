@@ -386,14 +386,20 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		*/
 		//20201115
 //		amlog = PrnSvr.amlog;
+		//20211115 MatsudairasyuMe auto rolling start by Date
 		//20201214
-		this.amlog = LogUtil.getDailyLogger(PrnSvr.logPath, this.clientId + "AM" + this.brws.substring(3) + byDate, "info", "[%d{yyyy/MM/dd HH:mm:ss:SSS}]%msg%n");
+//		this.amlog = LogUtil.getDailyLogger(PrnSvr.logPath, this.clientId + "AM" + this.brws.substring(3) + byDate, "info", "[%d{yyyy/MM/dd HH:mm:ss:SSS}]%msg%n");
+		this.amlog = LogUtil.getDailyLogger(PrnSvr.logPath, this.clientId + "AM" + this.brws.substring(3), "info", "[%d{yyyy/MM/dd HH:mm:ss:SSS}]%msg%n");
 		//----
+		//20211115 MatsudairasyuMe auto rolling start by Date
 		//20201214
-		this.aslog = LogUtil.getDailyLogger(PrnSvr.logPath, this.clientId + "AS" + this.brws.substring(3) + byDate, "info", "TIME     [0000]:%d{yyyy.MM.dd HH:mm:ss:SSS} %msg%n");
+//		this.aslog = LogUtil.getDailyLogger(PrnSvr.logPath, this.clientId + "AS" + this.brws.substring(3) + byDate, "info", "TIME     [0000]:%d{yyyy.MM.dd HH:mm:ss:SSS} %msg%n");
+		this.aslog = LogUtil.getDailyLogger(PrnSvr.logPath, this.clientId + "AS" + this.brws.substring(3), "info", "TIME     [0000]:%d{yyyy.MM.dd HH:mm:ss:SSS} %msg%n");
 //		atlog = PrnSvr.atlog;
+		//20211115 MatsudairasyuMe auto rolling start by Date
 		//20201214
-		this.atlog = LogUtil.getDailyLogger(PrnSvr.logPath, this.clientId + "AT" + this.brws.substring(3) + byDate, "info", "[TID:%X{PID} %d{yyyy/MM/dd HH:mm:ss:SSS}]:[%X{WSNO}]:[%thread]:[%class{0} %M|%L]:%msg%n");
+//		this.atlog = LogUtil.getDailyLogger(PrnSvr.logPath, this.clientId + "AT" + this.brws.substring(3) + byDate, "info", "[TID:%X{PID} %d{yyyy/MM/dd HH:mm:ss:SSS}]:[%X{WSNO}]:[%thread]:[%class{0} %M|%L]:%msg%n");
+		this.atlog = LogUtil.getDailyLogger(PrnSvr.logPath, this.clientId + "AT" + this.brws.substring(3), "info", "[TID:%X{PID} %d{yyyy/MM/dd HH:mm:ss:SSS}]:[%X{WSNO}]:[%thread]:[%class{0} %M|%L]:%msg%n");
 		atlog.info("=============[Start]=============");
 		atlog.info("------MainThreadId={}------", pid);
 		atlog.info("------Call MaintainLog OK------");
@@ -935,7 +941,15 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				log.debug("unload idle state handler");
 				clientChannel.pipeline().remove(idleStateHandlerName);
 			}
-
+			//20211126 MatsudairaSyuMe check system date end
+			if (!new SimpleDateFormat("yyyyMMdd").format(new Date()).trim().equals(this.getByDate())) {
+				//20211126 date changed update am log
+				if (this.amlog != null)
+					amlog.info("[{}][{}][{}]:                            ", brws, "        ", "            ");
+				this.setByDate(new SimpleDateFormat("yyyyMMdd").format(new Date()).trim());
+				log.info("system date changed");
+			}
+			//----
 			IdleStateEvent e = (IdleStateEvent) evt;
 			if (e.state() == IdleState.READER_IDLE) {
 				log.debug(clientId + " READER_IDLE");
@@ -3246,7 +3260,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 							// 20200504
 							this.curState = EJECTAFTERPAGEERROR;
 							log.error("ERROR!!! received data from host timeout {}", responseTimeout);
-							amlog.info("[{}][{}][{}]:21存摺頁次錯誤！[{}]接電文逾時{}", brws, pasname, this.account, rpage, responseTimeout);
+							//20211126 MatsudairaSyuMe change AMlog timeout message
+//							amlog.info("[{}][{}][{}]:21存摺頁次錯誤！[{}]接電文逾時{}", brws, pasname, this.account, rpage, responseTimeout);
+							amlog.info("[{}][{}][{}]05中心存摺補登資料接收電文逾時{}", brws, pasname, this.account, responseTimeout);
+							//----
 							SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000001");
 							// ----
 							if (SetSignal(!firstOpenConn, firstOpenConn, "0000000000", "0000000001")) {
@@ -4104,7 +4121,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				//amlog.info("[{}][{}][{}]:07存摺磁條寫入成功！", brws, pasname, account);//20211028 MatsudairaSyuMe read MSR again after write MSR and check the result with previous write constant
 				log.debug("07存摺磁條寫入成功！ 1");
 				reReadcusid = null;
-				if (null != (reReadcusid = prt.MS_Read(firstOpenConn, brws))) {
+				if (null != (reReadcusid = prt.MS_CheckAndRead(firstOpenConn, brws))) {//20211123 change to use MS_CheckAndRead
 					if (reReadcusid.length == 1) {
 						amlog.info("[{}][{}][{}]:11磁條讀取失敗(1)！", brws, "        ", "            ");
 						InsertAMStatus(brws, catagory, account, "11磁條讀取失敗(1)！");
@@ -4165,7 +4182,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				this.curState = READANDCHECKMSR;
 				log.debug("07存摺磁條寫入成功！ 2");
 				reReadcusid = null;
-				if (null != (reReadcusid = prt.MS_Read(firstOpenConn, brws))) {
+				if (null != (reReadcusid = prt.MS_CheckAndRead(firstOpenConn, brws))) {//20211123 change to use MS_CheckAndRead
 					if (reReadcusid.length == 1) {
 						amlog.info("[{}][{}][{}]:11磁條讀取失敗(1)！", brws, "        ", "            ");
 						atlog.info("[{}]:AutoPrnCls : MS_Read() -- Read MSR Error(1) !", brws);
@@ -4214,7 +4231,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
         case READANDCHECKMSR:
 			log.debug("{} {} {} :AutoPrnCls : process READANDCHECKMSR", brws, catagory, account);
 			reReadcusid = null;
-			if (null != (reReadcusid = prt.MS_Read(!firstOpenConn, brws))) {
+			if (null != (reReadcusid = prt.MS_CheckAndRead(!firstOpenConn, brws))) {//20211123 change to use MS_CheckAndRead
 				if (reReadcusid.length == 1) {
 					amlog.info("[{}][{}][{}]:11磁條讀取失敗(1)！", brws, "        ", "            ");
 					atlog.info("[{}]:AutoPrnCls : MS_Read() -- Read MSR Error(1) !", brws);
