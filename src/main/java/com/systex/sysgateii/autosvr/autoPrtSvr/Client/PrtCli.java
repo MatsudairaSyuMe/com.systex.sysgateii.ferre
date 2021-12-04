@@ -1,5 +1,5 @@
 package com.systex.sysgateii.autosvr.autoPrtSvr.Client;
-
+import java.util.Calendar;
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -508,6 +508,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 			e.printStackTrace();
 			log.debug("update status table {} error:", PrnSvr.statustbname, e.getMessage());
 		}
+		PeriodDayEndSchedule();  //20211203 MatsudairasyuMe set day end check log schedule
 	}
 	//20210217 MatsudairaSyume for brws name check
 	boolean isValidBrws (String askbrws) {
@@ -517,7 +518,6 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 			rtn = false;
 		return rtn;
 	}
-
 
 	//----
 	public void sendBytes(byte[] msg) throws IOException {
@@ -3470,7 +3470,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					amlog = null;
 					aslog = null;
 					atlog = null;
-					//----
+					timer.cancel();  //20211203 MatsudairasyuMe
 					Thread.currentThread().interrupt();
 				}
 				this.curState = SESSIONBREAK;
@@ -4127,8 +4127,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 						InsertAMStatus(brws, catagory, account, "11磁條讀取失敗(1)！");
 						log.debug("{} {} {} AutoPrnCls : read MSR ERROR after write: from WRITEMSR", brws, catagory, account);
 						atlog.info("[{}]:AutoPrnCls : MS_Read() -- Read MSR Error(1) !", brws);
-						amlog.info("[{}][{}][{}]:13磁條比對不符", brws, pasname, account);
-						InsertAMStatus(brws, pasname, account, "13磁條比對不符");
+						//amlog.info("[{}][{}][{}]:13磁條比對不符", brws, pasname, account);  20211203 MatsudairaSyuMe
+						//InsertAMStatus(brws, pasname, account, "13磁條比對不符");  20211203 MatsudairaSyuMe
 						SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000001");
 						prt.Eject(firstOpenConn);
 						Sleep(2 * 1000);
@@ -4142,14 +4142,14 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 						amlog.info("[{}][{}][{}]:13寫入資料：{}", brws, pasname, account, tx_area.get("c_Msr"));
 						amlog.info("[{}][{}][{}]:13讀取資料：{}", brws, pasname, account, reReadsid);
 						if (tx_area.get("c_Msr").equals(reReadsid)) {
-							amlog.info("[{}][{}][{}]:12存摺磁條比對正確(1)！", brws, pasname, account);
+							// amlog.info("[{}][{}][{}]:12存摺磁條比對正確(1)！", brws, pasname, account); 20211203 MatsudairaSyuMe
 							this.curState = SNDANDRCVDELTLM;
 							amlog.info("[{}][{}][{}]:13磁條比對成功", brws, pasname, account);
 							log.debug("{} {} {} AutoPrnCls : --re-read and check Account: from WRITEMSR", brws, catagory, account);
 						} else {
-							amlog.info("[{}][{}][{}]:12存摺磁條比對失敗(1)！{} {}", brws, pasname, account, tx_area.get("c_Msr"), reReadsid);
+							// amlog.info("[{}][{}][{}]:12存摺磁條比對失敗(1)！{} {}", brws, pasname, account, tx_area.get("c_Msr"), reReadsid);20211203 MatsudairaSyuMe
 							atlog.info("[{}]:AutoPrnCls : WMSRFormat() ERR -- c_Msr=[{}][{}]", brws, tx_area.get("c_Msr"),reReadsid);
-							InsertAMStatus(brws, pasname, account, "12存摺磁條比對失敗(1)！");
+							// InsertAMStatus(brws, pasname, account, "12存摺磁條比對失敗(1)！");20211203 MatsudairaSyuMe
 							amlog.info("[{}][{}][{}]:13磁條比對不符", brws, pasname, account);
 							InsertAMStatus(brws, pasname, account, "13磁條比對不符");
 							log.debug("{} {} {} AutoPrnCls : read MSR ERROR [{}] after write: from WRITEMSR", brws, catagory, account,
@@ -4188,8 +4188,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 						atlog.info("[{}]:AutoPrnCls : MS_Read() -- Read MSR Error(1) !", brws);
 						InsertAMStatus(brws, catagory, account, "11磁條讀取失敗(1)！");
 						log.debug("{} {} {} AutoPrnCls : read MSR ERROR after write: from WRITEMSRWAITCONFIRM", brws, catagory, account);
-						amlog.info("[{}][{}][{}]:13磁條比對不符", brws, pasname, account);
-						InsertAMStatus(brws, pasname, account, "13磁條比對不符");
+						//amlog.info("[{}][{}][{}]:13磁條比對不符", brws, pasname, account); 20211203 MatsudairaSyuMe
+						//InsertAMStatus(brws, pasname, account, "13磁條比對不符"); 20211203 MatsudairaSyuMe
 						SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000001");
 						prt.Eject(firstOpenConn);
 						Sleep(2 * 1000);
@@ -4203,14 +4203,14 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 						amlog.info("[{}][{}][{}]:13寫入資料：{}", brws, pasname, account, tx_area.get("c_Msr"));
 						amlog.info("[{}][{}][{}]:13讀取資料：{}", brws, pasname, account, reReadsid);
 						if (tx_area.get("c_Msr").equals(reReadsid)) {
-							amlog.info("[{}][{}][{}]:12存摺磁條比對正確(1)！", brws, pasname, account);
+							//amlog.info("[{}][{}][{}]:12存摺磁條比對正確(1)！", brws, pasname, account); 20211203 MatsudairaSyuMe
 							this.curState = SNDANDRCVDELTLM;
 							amlog.info("[{}][{}][{}]:13磁條比對成功", brws, pasname, account);
 							log.debug("{} {} {} AutoPrnCls : --re-read and check Account: from WRITEMSRWAITCONFIRM", brws, catagory, account);
 						} else {
-							amlog.info("[{}][{}][{}]:12存摺磁條比對失敗(1)！{} {}", brws, pasname, account, tx_area.get("c_Msr"), reReadsid);
+							//amlog.info("[{}][{}][{}]:12存摺磁條比對失敗(1)！{} {}", brws, pasname, account, tx_area.get("c_Msr"), reReadsid); 20211203 MatsudairaSyuMe
 							atlog.info("[{}]:AutoPrnCls : WMSRFormat() ERR -- c_Msr=[{}][{}]", brws, tx_area.get("c_Msr"),reReadsid);
-							InsertAMStatus(brws, pasname, account, "12存摺磁條比對失敗(1)！");
+							//InsertAMStatus(brws, pasname, account, "12存摺磁條比對失敗(1)！"); 20211203 MatsudairaSyuMe
 							amlog.info("[{}][{}][{}]:13磁條比對不符", brws, pasname, account);
 							InsertAMStatus(brws, pasname, account, "13磁條比對不符");
 							log.debug("{} {} {} AutoPrnCls : read MSR ERROR [{}] after write: from WRITEMSRWAITCONFIRM", brws, catagory, account,
@@ -4237,8 +4237,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					atlog.info("[{}]:AutoPrnCls : MS_Read() -- Read MSR Error(1) !", brws);
 					InsertAMStatus(brws, catagory, account, "11磁條讀取失敗(1)！");
 					log.debug("{} {} {} AutoPrnCls : read MSR ERROR after write: from READANDCHECKMSR", brws, catagory, account);
-					amlog.info("[{}][{}][{}]:13磁條比對不符", brws, pasname, account);
-					InsertAMStatus(brws, pasname, account, "13磁條比對不符");
+					//amlog.info("[{}][{}][{}]:13磁條比對不符", brws, pasname, account); 20211203 MatsudairaSyuMe
+					//InsertAMStatus(brws, pasname, account, "13磁條比對不符"); 20211203 MatsudairaSyuMe
 					SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0000000001");
 					prt.Eject(firstOpenConn);
 					Sleep(2 * 1000);
@@ -4252,15 +4252,15 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					amlog.info("[{}][{}][{}]:13寫入資料：{}", brws, pasname, account, tx_area.get("c_Msr"));
 					amlog.info("[{}][{}][{}]:13讀取資料：{}", brws, pasname, account, reReadsid);
 					if (tx_area.get("c_Msr").equals(reReadsid)) {
-						amlog.info("[{}][{}][{}]:12存摺磁條比對正確(1)！", brws, pasname, account);
+						//amlog.info("[{}][{}][{}]:12存摺磁條比對正確(1)！", brws, pasname, account); 20211203 MatsudairaSyuMe
 						this.curState = SNDANDRCVDELTLM;
 						amlog.info("[{}][{}][{}]:13磁條比對成功", brws, pasname, account);
 						amlog.info("[{}][{}][{}]:72存摺資料補登成功！", brws, pasname, account);
 						log.debug("{} {} {} AutoPrnCls : --re-read and check Account: from READANDCHECKMSR", brws, catagory, account);
 					} else {
-						amlog.info("[{}][{}][{}]:12存摺磁條比對失敗(1)！{} {}", brws, pasname, account, tx_area.get("c_Msr"), reReadsid);
+						//amlog.info("[{}][{}][{}]:12存摺磁條比對失敗(1)！{} {}", brws, pasname, account, tx_area.get("c_Msr"), reReadsid); 20211203 MatsudairaSyuMe
 						atlog.info("[{}]:AutoPrnCls : WMSRFormat() ERR -- c_Msr=[{}][{}]", brws, tx_area.get("c_Msr"),reReadsid);
-						InsertAMStatus(brws, pasname, account, "12存摺磁條比對失敗(1)！");
+						//InsertAMStatus(brws, pasname, account, "12存摺磁條比對失敗(1)！"); 20211203 MatsudairaSyuMe
 						amlog.info("[{}][{}][{}]:13磁條比對不符", brws, pasname, account);
 						InsertAMStatus(brws, pasname, account, "13磁條比對不符");
 						log.debug("{} {} {} AutoPrnCls : read MSR ERROR [{}] after write: from READANDCHECKMSR", brws, catagory, account, reReadsid);
@@ -4732,5 +4732,29 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 	public String getLocalHostAddr() {
 		return this.localHostAddr;
 	}
+	// 20211203 MatsudairaSyuMe
+	private Timer timer = null;
+	private void PeriodDayEndSchedule() {
+		this.timer = new Timer();
+		Calendar calendar = Calendar.getInstance();
+		calendar.set(Calendar.HOUR_OF_DAY, 0);
+		calendar.set(Calendar.MINUTE, 0);
+		calendar.set(Calendar.SECOND, 1);
+		Date firstTime = calendar.getTime();
+		log.info("設定執行 Date 為：{} , Period：86400秒", firstTime);
+//		timer.schedule(new DateTask(), firstTime, 86400 *1000);
+		timer.scheduleAtFixedRate(new DateTask(), firstTime, 86400 *1000);
+//        timer.cancel();
+	}
 
+	public class DateTask extends TimerTask {
+		@Override
+		public void run() {
+			if (amlog != null)
+				amlog.info("[{}][{}][{}]:                            ", brws, "        ", "            ");
+			if (aslog != null)
+				aslog.info(String.format("SCH  %s[%04d]:", curSockNm, 0));
+			log.info("Task 執行時間：" + new Date());
+		}
+	}
 }
