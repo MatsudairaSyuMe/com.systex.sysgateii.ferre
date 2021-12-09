@@ -146,7 +146,11 @@ public class FASClientChannelHandler extends ChannelInboundHandlerAdapter {
 						}
 						clientMessageBuf.writeBytes(buf);
 						log.debug("clientMessageBuf.readableBytes={}", clientMessageBuf.readableBytes());
-						if (clientMessageBuf.readableBytes() > 47) {
+						//20211209 MatsudairaSyuMe take off all the data from  clientMessageBuf and convert to TOTA telegram
+						// change from if to while
+						while (clientMessageBuf.readableBytes() > 47) {
+							//20211209 MatsudairaSyuMe take off all the data from  clientMessageBuf and convert to TOTA telegram
+							log.debug("clientMessageBuf.readableBytes={} inner while loop!!!",clientMessageBuf.readableBytes());
 							byte[] trnidbary = new byte[5]; // 20210512 length of "trnidbary" for BOT is 5
 							Arrays.fill(trnidbary, (byte) ' ');
 							clientMessageBuf.getBytes(clientMessageBuf.readerIndex() + 38, trnidbary);
