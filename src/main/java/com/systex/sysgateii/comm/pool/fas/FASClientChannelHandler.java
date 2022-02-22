@@ -161,7 +161,7 @@ public class FASClientChannelHandler extends ChannelInboundHandlerAdapter {
 								log.debug("clientMessageBuf.readableBytes={} lower to telegram field size={} wait incomming data",clientMessageBuf.readableBytes(), dataUtil.fromByteArray(lenbary));
 								break;
 							}
-							byte[] trnidbary = new byte[5]; // 20210512 length of "trnidbary" for BOT is 5
+							byte[] trnidbary = new byte[4]; // 20210512 length of "trnidbary" for BOT is 5
 							Arrays.fill(trnidbary, (byte) ' ');
 							clientMessageBuf.getBytes(clientMessageBuf.readerIndex() + 38, trnidbary);
 							byte[] resultmsg = cnvResultTelegram();
@@ -169,7 +169,7 @@ public class FASClientChannelHandler extends ChannelInboundHandlerAdapter {
 							String checkTRN = new String(trnidbary, StandardCharsets.UTF_8);
 							if ((trnidbary[0] == (byte)'S') || (trnidbary[0] == (byte)'T'))
 							{
-								log.warn("receive trnid=[{}] non-service telegram drop it !!!", checkTRN);
+								log.warn("receive TOTA-MSGID=[{}] non-service telegram drop it !!!", checkTRN);
 							} else {
 								//20220221----
 							    String telegramKey = dataUtil.getTelegramKey(resultmsg);
