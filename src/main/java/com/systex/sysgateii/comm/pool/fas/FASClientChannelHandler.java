@@ -167,7 +167,7 @@ public class FASClientChannelHandler extends ChannelInboundHandlerAdapter {
 							byte[] resultmsg = cnvResultTelegram();
 							//20220221 MatsudairSyuMe drop non-service telegram
 							String checkTRN = new String(trnidbary, StandardCharsets.UTF_8);
-							if (trnidbary[0] == (byte)'S')
+							if ((trnidbary[0] == (byte)'S') || (trnidbary[0] == (byte)'T'))
 							{
 								log.warn("receive trnid=[{}] non-service telegram drop it !!!", checkTRN);
 							} else {
