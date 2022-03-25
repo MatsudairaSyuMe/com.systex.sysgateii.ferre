@@ -440,8 +440,20 @@ public class MultiNodeConnPoolImpl implements NonBlockingConnPool {
 		    conn.attr(ATTR_KEY_NODE).set(node);
 //		    LOG.info("reConnect 1 availableConns.size=[{}] [{}]",availableConns.size(), availableConns);
 //		    LOG.info("reConnect 1 allConns.size=[{}] [{}]",allConns.size(), allConns);
-		    availableConns.computeIfAbsent(node, na -> new ConcurrentLinkedQueue<>()).add(conn);
-		    allConns.computeIfAbsent(node, na2 -> new ConcurrentLinkedQueue<>()).add(conn);
+		    //2020325 add
+		    if (!allConns.containsKey(node))
+		    //----
+		    	allConns.computeIfAbsent(node, na -> new ConcurrentLinkedQueue<>()).add(conn);
+		    //20220325 add
+		    else {
+		    	final Queue<Channel> connQueue = allConns.get(node);
+			    if (connQueue != null) {
+				    connQueue.add(conn);
+				    LOG.info("reConnect add connQueue to allConns");
+			    }		    	
+		    }
+		    //----
+//		    availableConns.computeIfAbsent(node, na -> new ConcurrentLinkedQueue<>()).add(conn);
 		    synchronized (connCounts) {
 			    connCounts.get(node).incrementAndGet();
 		    }
@@ -451,13 +463,20 @@ public class MultiNodeConnPoolImpl implements NonBlockingConnPool {
 		    }
 		    LOG.info("reConnect lambda New connection to " + node + " created {}", connAttemptsLimit);
 		    if (conn.isActive()) {
-			    final Queue<Channel> connQueue = availableConns.get(node);
-			    if (connQueue != null) {
-				    connQueue.add(conn);
-				    LOG.info("reConnect add connQueue");
-			    }
-//			    LOG.info("reConnect 2 availableConns.size=[{}] [{}]",availableConns.size(), availableConns);
-//			    LOG.info("reConnect 2 allConns.size=[{}] [{}]",allConns.size(), allConns);
+				// 2020325 add
+				if (!availableConns.containsKey(node)) {
+					// ----
+					availableConns.computeIfAbsent(node, na2 -> new ConcurrentLinkedQueue<>()).add(conn);
+					LOG.info("reConnect add connQueue to availableConns");
+				} else {
+					final Queue<Channel> connQueue = availableConns.get(node);
+					if (connQueue != null) {
+						connQueue.add(conn);
+						LOG.info("reConnect add connQueue");
+					}
+				}
+//			    LOG.info("reConnect 2 allConns.size=[{}] [{}]", allConns.size(), allConns);
+//			    LOG.info("reConnect 2 availableConns.size=[{}] [{}]", availableConns.size(), availableConns);
 		    } else {
 			    conn.close();
 		    }
