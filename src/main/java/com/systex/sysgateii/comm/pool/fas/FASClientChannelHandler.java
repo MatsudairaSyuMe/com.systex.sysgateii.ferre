@@ -221,8 +221,8 @@ public class FASClientChannelHandler extends ChannelInboundHandlerAdapter {
 			MDC.put("SERVER_PORT", String.valueOf(remotsock.getPort()));
 			MDC.put("LOCAL_ADDRESS", (String) localsock.getAddress().toString());
 			MDC.put("LOCAL_PORT", String.valueOf(localsock.getPort()));
-			try {
-				faslog.debug(String.format(fasSendPtrn, msg.length,
+			try {//20220409 change to info
+				faslog.info(String.format(fasSendPtrn, msg.length,
 						charcnv.BIG5bytesUTF8str(Arrays.copyOfRange(msg, 12, msg.length))));
 			} catch (Exception e) {
 				e.printStackTrace();

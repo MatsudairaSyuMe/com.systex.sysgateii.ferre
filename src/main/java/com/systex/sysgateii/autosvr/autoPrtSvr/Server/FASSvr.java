@@ -207,7 +207,7 @@ public class FASSvr implements MessageListener<byte[]>, Runnable {
 							header1.getBytes().length + dataUtil.to3ByteArray(sendlen).length
 									+ header2.getBytes().length + telmsg.length,
 							charcnv.BIG5bytesUTF8str(telmsg)) + " isCurrConnNull=[" + isCurrConnNull() + "]");
-					faslog.debug(
+					faslog.info(//20220409 change to info
 							String.format(fasSendPtrn,
 									header1.getBytes().length + dataUtil.to3ByteArray(sendlen).length
 											+ header2.getBytes().length + telmsg.length,
@@ -296,7 +296,7 @@ public class FASSvr implements MessageListener<byte[]>, Runnable {
 							System.arraycopy(rtn, 0, faslogary, 0, rtn.length);
 							for (int _tmpidx = 0; _tmpidx < rtn.length; _tmpidx++)
 								faslogary[_tmpidx] = (rtn[_tmpidx] == (byte)0x0 ? (byte)' ': rtn[_tmpidx]);
-							faslog.debug(String.format(fasRecvPtrn, telmbyteary.length, charcnv.BIG5bytesUTF8str(faslogary)));
+							faslog.info(String.format(fasRecvPtrn, telmbyteary.length, charcnv.BIG5bytesUTF8str(faslogary))); //20220409 change to info
 //							faslog.debug(String.format(fasRecvPtrn, telmbyteary.length, charcnv.BIG5bytesUTF8str(rtn)));
 							// ----
 							rtn = remove03(rtn);
