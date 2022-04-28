@@ -398,7 +398,7 @@ public class CS4625Impl implements Printer {
 				}
 			}
 //20200330			Sleep(100);
-			Sleep(50);
+			Sleep(33); //20220427 MatsudairaSyuMe change from 50 to 33
 		} while (++retry < 10);
 		if (getIsShouldShutDown().get())
 			return "DIS".getBytes();
@@ -466,7 +466,7 @@ public class CS4625Impl implements Printer {
 				}
 			}
 //20200330			Sleep(100);
-			Sleep(50);
+			//20220427 MatsudairaSyuMe    Sleep(50);
 		} while (++retry < 10);
 		if (getIsShouldShutDown().get())
 			return "DIS".getBytes();

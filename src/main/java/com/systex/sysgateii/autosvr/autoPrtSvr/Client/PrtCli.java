@@ -317,6 +317,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 	//20210627 MatsudairaSyuMe add Majordomo Protocol processing
 	private mdcliapi2 clientSession = null;
 	//----
+	//20220427  MatsudairaSyuMe
+	private int startCount = 4;
+	private boolean startIdleMode = false;
+	//----
 	public List<ActorStatusListener> getActorStatusListeners() {
 		return actorStatusListeners;
 	}
@@ -590,7 +594,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 						@Override
 						public void initChannel(SocketChannel ch) throws Exception {
 							ch.pipeline().addLast("log", new LoggingHandler(PrtCli.class, LogLevel.INFO));
-							ch.pipeline().addLast(new IdleStateHandler(200, 0, 0, TimeUnit.MILLISECONDS));
+							ch.pipeline().addLast(new IdleStateHandler(PrnSvr.getReqTime(), 0, 0, TimeUnit.MILLISECONDS));  //20220425 MatsudairaSyuMe 200 changed to used getReadIdleTime()
 							ch.pipeline().addLast(getHandler("PrtCli"));
 						}
 					});
@@ -745,7 +749,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 			@Override
 			public void initChannel(SocketChannel ch) throws Exception {
 				ch.pipeline().addLast("log", new LoggingHandler(PrtCli.class, LogLevel.INFO));
-				ch.pipeline().addLast(new IdleStateHandler(200, 0, 0, TimeUnit.MILLISECONDS));
+				ch.pipeline().addLast(new IdleStateHandler(PrnSvr.getReqTime(), 0, 0, TimeUnit.MILLISECONDS)); //20220425 MatsudairaSyuMe 200 change to use getReadIdleTime()
 				ch.pipeline().addLast(getHandler("PrtCli"));
 			}
 		});
@@ -953,7 +957,30 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 			IdleStateEvent e = (IdleStateEvent) evt;
 			if (e.state() == IdleState.READER_IDLE) {
 				log.debug(clientId + " READER_IDLE");
-				prtcliFSM(!firstOpenConn);
+				//20220427 MatsudairaSyuMe ====
+				if ((this.curState == CAPTUREPASSBOOK) && (this.iFirst == 0) && (PrnSvr.getChgidleTime() > 0)) {
+					if ((startIdleMode == false)
+							&& ((System.currentTimeMillis() - this.lastCheckTime) >= (PrnSvr.getChgidleTime()
+									* 1000))
+							&& ((System.currentTimeMillis() - this.lastCheckTime) < ((2 * PrnSvr.getChgidleTime())
+									* 1000))) {
+						if (this.startCount > 0) {
+							this.startCount -= 1;
+							startIdleMode = false;
+						} else {
+							this.startCount = 4;
+							startIdleMode = true;
+						}
+					} else if ((System.currentTimeMillis() - this.lastCheckTime) >= ((2 * PrnSvr.getChgidleTime())
+							* 1000)) {
+						this.lastCheckTime = System.currentTimeMillis();
+						this.startCount = 4;
+						startIdleMode = false;
+					}
+				} else
+					startIdleMode = false;
+				if (!((this.curState == CAPTUREPASSBOOK) && (this.startIdleMode != false)))
+					prtcliFSM(!firstOpenConn);
 
 			} else if (e.state() == IdleState.WRITER_IDLE) {
 				log.debug(clientId + " WRITER_IDLE");
@@ -3533,10 +3560,16 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				} else {
 					amlog.info("[{}][{}][{}]:****************************", brws, "        ", "            ");
 					amlog.info("[{}][{}][{}]:00請插入存摺...", brws, pasname, "            ");
-					log.debug("DetectPaper [{}][{}][{}]:00請插入存摺...", brws, pasname, "            ");
+					//20220427 MatsudairaSyuMe
+					this.lastCheckTime = System.currentTimeMillis();
+					this.startCount = 4;
+					this.startIdleMode = false;
+					//--
+					log.debug("DetectPaper [{}][{}][{}]:00請插入存摺...{} {}", brws, pasname, "            ", this.lastCheckTime, this.startCount);
 				}
 				//----
 				this.lastCheckTime = System.currentTimeMillis();
+				/* 20200427 mark up for  performance
 //20200910 change to use UPSERT
 //				String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
 //						this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDACT);
@@ -3554,6 +3587,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					e.printStackTrace();
 					log.error("update state table {} error:{}", PrnSvr.statustbname, e.getMessage());
 				}
+				20200427  */
 //20200925				prt.DetectPaper(firstOpenConn, 0);
 				prt.DetectPaper(firstOpenConn, responseTimeout);
 			}
@@ -3582,9 +3616,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 						log.debug("{} {} {} AutoPrnCls : --start Show Signal", brws, catagory, account);
 //20200821 test						SetSignal(firstOpenConn, !firstOpenConn, "0000000000", "0010000000");
 						SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0010000000");
-						//----
+							//----
 					} else {
-						if ((System.currentTimeMillis() - this.lastCheckTime) > 10 * 1000) {
+					//	if ((System.currentTimeMillis() - this.lastCheckTime) > 10 * 1000) {
+							/* 20220427  MatsudairaSyuMe Maru up for  performance
 //20200910 change to use new UPSERT
 //							String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
 //									this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDACT);
@@ -3602,16 +3637,19 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 								e.printStackTrace();
 								log.error("update state table {} error:{}", PrnSvr.statustbname, e.getMessage());
 							}
-							this.lastCheckTime = System.currentTimeMillis();
-						}//20220221 change "Deteect Error" to "Detect No Passbook Insert"
-						log.debug("{} {} {} AutoPrnCls : Parsing() -- Detect No Passbook Insert!", brws, catagory, account);
+							*/
+					//		this.lastCheckTime = System.currentTimeMillis();
+					//	}//20220221 change "Deteect Error" to "Detect No Passbook Insert"
+							log.debug("{} {} {} {} {} {} AutoPrnCls : Parsing() -- Detect No Passbook Insert!", brws, catagory, account, startIdleMode, this.lastCheckTime, this.startCount);
 					}
+
 		//20200611 for turn page processing
 /*				}
 			}*/
 			//20200718
 			lastCheck(before);
-			log.debug("after {}=>{}=====check prtcliFSM", before, this.curState);
+			//20200427 test
+			log.debug("after {}=>{} {} count {} =====check prtcliFSM", before, this.curState, this.lastCheckTime, this.startCount);
 			break;
 
 		case GETPASSBOOKSHOWSIG:
