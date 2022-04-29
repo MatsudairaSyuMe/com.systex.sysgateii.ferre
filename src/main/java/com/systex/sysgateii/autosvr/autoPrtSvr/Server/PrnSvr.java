@@ -126,8 +126,8 @@ public class PrnSvr implements MessageListener<byte[]> {
 	//20201006
 	static DynamicProps dcf = null;
 	//----
-	//20220427  MatsudairaSyuMe
-	private static int reqTime = 10; //miniseconds
+	//20220429  MatsudairaSyuMe
+	private static int reqTime = 250; //miniseconds
 	private static int chgidleTime = 60; //seconds
 	//----
 
@@ -618,18 +618,18 @@ public class PrnSvr implements MessageListener<byte[]> {
 		devamtbfields = cfg.getConHashMap().get("system.devamtb[@fields]");
 		//----
 		
-		//20220427 MatsudairaSyuMe
+		//20220429 MatsudairaSyuMe
 		String teststr = cfg.getConHashMap().get("reqtime").trim();
 		if(StrUtil.isEmpty(teststr))
-			setReqTime(Integer.parseInt("50"));
+			setReqTime(Integer.parseInt("reqTime"));
 		else
-			setReqTime(Integer.parseInt(teststr));
+			setReqTime((Integer.parseInt(teststr) / 2));
 		teststr = "";
 		teststr = cfg.getConHashMap().get("chgidletime").trim();
 		if(StrUtil.isEmpty(teststr))
-			setReqTime(Integer.parseInt("60"));
+			setChgidleTime(Integer.parseInt("60"));
 		else
-			setReqTime(Integer.parseInt(teststr));
+			setChgidleTime(Integer.parseInt(teststr));
 		//----
 
 		//20201106
@@ -683,7 +683,7 @@ public class PrnSvr implements MessageListener<byte[]> {
 		}
 	}
 
-	//20220427 MatsudaioraSyuMe
+	//20220429 MatsudaioraSyuMe
 	public static int getReqTime() {
 		return PrnSvr.reqTime;
 	}

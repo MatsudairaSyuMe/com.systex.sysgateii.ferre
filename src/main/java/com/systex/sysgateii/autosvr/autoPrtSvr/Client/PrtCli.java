@@ -317,9 +317,9 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 	//20210627 MatsudairaSyuMe add Majordomo Protocol processing
 	private mdcliapi2 clientSession = null;
 	//----
-	//20220427  MatsudairaSyuMe
-	private int startCount = 4;
+	//20220429  MatsudairaSyuMe
 	private boolean startIdleMode = false;
+	private long lastRequestTime = 0l;
 	//----
 	public List<ActorStatusListener> getActorStatusListeners() {
 		return actorStatusListeners;
@@ -545,7 +545,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					cnvStr = new String(msg);
 			}
 			try {//20210803 MAtsydairaSyuMe change to use ESAPI for Log Forging
-				aslog.info(String.format("SEND %s[%04d]:%s", this.curSockNm, msg.length, StrUtil.convertValidLog(cnvStr)));
+				if (((startIdleMode == true) && ((System.currentTimeMillis() - this.lastCheckTime) >= (PrnSvr.getChgidleTime() * 1000))) || ((startIdleMode == false)))
+					aslog.info(String.format("SEND %s[%04d]:%s", this.curSockNm, msg.length, StrUtil.convertValidLog(cnvStr)));
 			} catch (Exception e) {
 				e.printStackTrace();
 				log.error("aslog data format error");
@@ -846,7 +847,15 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					byte[] asary = new byte[buf.readableBytes()];
 					ByteBuf dup = buf.duplicate();
 					dup.readBytes(asary);
-					aslog.info(String.format("RECV %s[%04d]:%s", this.curSockNm, buf.readableBytes(), new String(asary)));
+					//20220429 MatsuairaSyuMe mark up log
+					if (startIdleMode == true) {
+						if ((System.currentTimeMillis() - this.lastCheckTime) > (PrnSvr.getChgidleTime() * 1000)) {
+							aslog.info(String.format("RECV %s[%04d]:%s", this.curSockNm, buf.readableBytes(), new String(asary)));
+							this.lastCheckTime = System.currentTimeMillis();
+						}
+					} else
+						aslog.info(String.format("RECV %s[%04d]:%s", this.curSockNm, buf.readableBytes(), new String(asary)));
+					//----
 					if (clientMessageBuf.readerIndex() > (clientMessageBuf.capacity() / 2)) {
 						clientMessageBuf.discardReadBytes();
 						log.debug("adjustment clientMessageBuf readerindex ={}" + clientMessageBuf.readableBytes());
@@ -957,30 +966,13 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 			IdleStateEvent e = (IdleStateEvent) evt;
 			if (e.state() == IdleState.READER_IDLE) {
 				log.debug(clientId + " READER_IDLE");
-				//20220427 MatsudairaSyuMe ====
+				//20220429 MatsudairaSyuMe ====
 				if ((this.curState == CAPTUREPASSBOOK) && (this.iFirst == 0) && (PrnSvr.getChgidleTime() > 0)) {
-					if ((startIdleMode == false)
-							&& ((System.currentTimeMillis() - this.lastCheckTime) >= (PrnSvr.getChgidleTime()
-									* 1000))
-							&& ((System.currentTimeMillis() - this.lastCheckTime) < ((2 * PrnSvr.getChgidleTime())
-									* 1000))) {
-						if (this.startCount > 0) {
-							this.startCount -= 1;
-							startIdleMode = false;
-						} else {
-							this.startCount = 4;
-							startIdleMode = true;
-						}
-					} else if ((System.currentTimeMillis() - this.lastCheckTime) >= ((2 * PrnSvr.getChgidleTime())
-							* 1000)) {
-						this.lastCheckTime = System.currentTimeMillis();
-						this.startCount = 4;
-						startIdleMode = false;
-					}
+					if (((System.currentTimeMillis() - this.lastCheckTime) >= (PrnSvr.getChgidleTime() * 1000)) && (startIdleMode == false))
+						startIdleMode = true;
 				} else
 					startIdleMode = false;
-				if (!((this.curState == CAPTUREPASSBOOK) && (this.startIdleMode != false)))
-					prtcliFSM(!firstOpenConn);
+				prtcliFSM(!firstOpenConn);
 
 			} else if (e.state() == IdleState.WRITER_IDLE) {
 				log.debug(clientId + " WRITER_IDLE");
@@ -3560,15 +3552,16 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				} else {
 					amlog.info("[{}][{}][{}]:****************************", brws, "        ", "            ");
 					amlog.info("[{}][{}][{}]:00請插入存摺...", brws, pasname, "            ");
-					//20220427 MatsudairaSyuMe
-					this.lastCheckTime = System.currentTimeMillis();
-					this.startCount = 4;
+					//20220429 MatsudairaSyuMe
 					this.startIdleMode = false;
 					//--
-					log.debug("DetectPaper [{}][{}][{}]:00請插入存摺...{} {}", brws, pasname, "            ", this.lastCheckTime, this.startCount);
+					log.debug("DetectPaper [{}][{}][{}]:00請插入存摺...", brws, pasname, "            ");
 				}
 				//----
 				this.lastCheckTime = System.currentTimeMillis();
+				//20220429 MatsudairaSyuMe use fix Request command Time
+				this.lastRequestTime = this.lastCheckTime;
+				//----
 				/* 20200427 mark up for  performance
 //20200910 change to use UPSERT
 //				String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
@@ -3608,6 +3601,12 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					//----
 				} else {*/
 
+			//20220429 MatsudairaSyuMe use fix Request command Time
+			long cur = System.currentTimeMillis();
+			log.debug("check CAPTUREPASSBOOK {}=>{} {}", cur, (cur - this.lastRequestTime), (PrnSvr.getReqTime() * 2));
+			if ((cur - this.lastRequestTime) >= (PrnSvr.getReqTime())) {
+				this.lastRequestTime = cur;
+			//
 
 //20200925			if (prt.DetectPaper!firstOpenConn, 0))
 					if (prt.DetectPaper(!firstOpenConn, responseTimeout))
@@ -3616,10 +3615,12 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 						log.debug("{} {} {} AutoPrnCls : --start Show Signal", brws, catagory, account);
 //20200821 test						SetSignal(firstOpenConn, !firstOpenConn, "0000000000", "0010000000");
 						SetSignal(firstOpenConn, firstOpenConn, "0000000000", "0010000000");
+						//20220429 MatsudairaSyuMe
+						this.startIdleMode = false;
 							//----
 					} else {
 					//	if ((System.currentTimeMillis() - this.lastCheckTime) > 10 * 1000) {
-							/* 20220427  MatsudairaSyuMe Maru up for  performance
+							/* 20220429  MatsudairaSyuMe Maru up for  performance
 //20200910 change to use new UPSERT
 //							String updValue = String.format(updValueptrn,this.brws, this.rmtaddr.getAddress().getHostAddress(),
 //									this.rmtaddr.getPort(),this.localaddr.getAddress().getHostAddress(), this.localaddr.getPort(), this.typeid, Constants.STSUSEDACT);
@@ -3640,16 +3641,20 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 							*/
 					//		this.lastCheckTime = System.currentTimeMillis();
 					//	}//20220221 change "Deteect Error" to "Detect No Passbook Insert"
-							log.debug("{} {} {} {} {} {} AutoPrnCls : Parsing() -- Detect No Passbook Insert!", brws, catagory, account, startIdleMode, this.lastCheckTime, this.startCount);
+							log.debug("{} {} {} {} {} AutoPrnCls : Parsing() -- Detect No Passbook Insert!", brws, catagory, account, startIdleMode, this.lastCheckTime);
 					}
 
 		//20200611 for turn page processing
 /*				}
 			}*/
+					//20220429 MatsudairaSyuMe use fix Request command Time		
+			} else
+				log.debug("current - lastRequestTime={} =====check prtcliFSM", before, this.curState, (cur - this.lastRequestTime));
+			//----
 			//20200718
 			lastCheck(before);
 			//20200427 test
-			log.debug("after {}=>{} {} count {} =====check prtcliFSM", before, this.curState, this.lastCheckTime, this.startCount);
+			log.debug("after {}=>{} {} =====check prtcliFSM", before, this.curState, this.lastCheckTime);
 			break;
 
 		case GETPASSBOOKSHOWSIG:
