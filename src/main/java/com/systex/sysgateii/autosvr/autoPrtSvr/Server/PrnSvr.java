@@ -621,9 +621,9 @@ public class PrnSvr implements MessageListener<byte[]> {
 		//20220429 MatsudairaSyuMe
 		String teststr = cfg.getConHashMap().get("reqtime").trim();
 		if(StrUtil.isEmpty(teststr))
-			setReqTime(Integer.parseInt("reqTime"));
+			setReqTime(Integer.parseInt("50"));
 		else
-			setReqTime((Integer.parseInt(teststr) / 2));
+			setReqTime(Integer.parseInt(teststr)); //202204 30 change from (Integer.parseInt(teststr) / 2) to Integer.parseInt(teststr)
 		teststr = "";
 		teststr = cfg.getConHashMap().get("chgidletime").trim();
 		if(StrUtil.isEmpty(teststr))

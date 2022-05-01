@@ -393,7 +393,7 @@ public class CS5240Impl implements Printer {
 				}
 			}
 //20200430			Sleep(100);
-			Sleep(100);//20220429 MatsudairaSyuMe change from 50 to 100
+			Sleep(30);//20220429 MatsudairaSyuMe change from 50 to 100  20220430 change to 30
 		} while (++retry < 10);
 		if (getIsShouldShutDown().get())
 			return "DIS".getBytes();
@@ -462,7 +462,7 @@ public class CS5240Impl implements Printer {
 				}
 			}
 //20200320		   Sleep(100);
-			//Sleep(40);//20220429 MatsudairaSyuMe change from 50 to 40
+			//20220429 MatsudairaSyuMe mark up
 		} while (++retry < 10);
 		if (getIsShouldShutDown().get())
 			return "DIS".getBytes();

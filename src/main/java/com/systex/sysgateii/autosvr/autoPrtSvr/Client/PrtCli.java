@@ -595,7 +595,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 						@Override
 						public void initChannel(SocketChannel ch) throws Exception {
 							ch.pipeline().addLast("log", new LoggingHandler(PrtCli.class, LogLevel.INFO));
-							ch.pipeline().addLast(new IdleStateHandler(PrnSvr.getReqTime(), 0, 0, TimeUnit.MILLISECONDS));  //20220425 MatsudairaSyuMe 200 changed to used getReadIdleTime()
+							ch.pipeline().addLast(new IdleStateHandler(((PrnSvr.getReqTime() > 110) ? (PrnSvr.getReqTime() - 10) : PrnSvr.getReqTime()), 0, 0, TimeUnit.MILLISECONDS)); //20220430 MatsudairaSyuMe 200 change to use getReadIdleTime()
+							ch.pipeline().addLast(new IdleStateHandler(100, 0, 0, TimeUnit.MILLISECONDS));  //20220425 MatsudairaSyuMe 200 changed to used getReadIdleTime()
 							ch.pipeline().addLast(getHandler("PrtCli"));
 						}
 					});
@@ -750,7 +751,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 			@Override
 			public void initChannel(SocketChannel ch) throws Exception {
 				ch.pipeline().addLast("log", new LoggingHandler(PrtCli.class, LogLevel.INFO));
-				ch.pipeline().addLast(new IdleStateHandler(PrnSvr.getReqTime(), 0, 0, TimeUnit.MILLISECONDS)); //20220425 MatsudairaSyuMe 200 change to use getReadIdleTime()
+				ch.pipeline().addLast(new IdleStateHandler(((PrnSvr.getReqTime() > 110) ? (PrnSvr.getReqTime() - 10) : PrnSvr.getReqTime()), 0, 0, TimeUnit.MILLISECONDS)); //20220430 MatsudairaSyuMe 200 change to use getReadIdleTime()
 				ch.pipeline().addLast(getHandler("PrtCli"));
 			}
 		});
@@ -3604,7 +3605,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 			//20220429 MatsudairaSyuMe use fix Request command Time
 			long cur = System.currentTimeMillis();
 			log.debug("check CAPTUREPASSBOOK {}=>{} {}", cur, (cur - this.lastRequestTime), (PrnSvr.getReqTime() * 2));
-			if ((cur - this.lastRequestTime) >= (PrnSvr.getReqTime())) {
+////20220430if ((cur - this.lastRequestTime) >= (PrnSvr.getReqTime())) {
 				this.lastRequestTime = cur;
 			//
 
@@ -3648,8 +3649,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 /*				}
 			}*/
 					//20220429 MatsudairaSyuMe use fix Request command Time		
-			} else
-				log.debug("current - lastRequestTime={} =====check prtcliFSM", before, this.curState, (cur - this.lastRequestTime));
+////20220430} else
+////20220430	log.debug("current - lastRequestTime={} =====check prtcliFSM", before, this.curState, (cur - this.lastRequestTime));
 			//----
 			//20200718
 			lastCheck(before);
