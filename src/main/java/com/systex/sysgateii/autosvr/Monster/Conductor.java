@@ -35,8 +35,9 @@ public class Conductor implements Runnable {
 	static Map<String, String> svridnodeMap = Collections.synchronizedMap(new LinkedHashMap<String, String>());
 	static GwDao jsel2ins = null;
 	static Conductor server;
-	GwDao jdawcon = null;
-	GwDao cmdhiscon = null;
+	//20220607 MatsudairaSyuMe jdawcon, cmdhiscon set to local parameter
+	private GwDao jdawcon = null;
+	private GwDao cmdhiscon = null;
 	private String hisfldvalssptrn = "%s,'%s','%s','%s', '%s'";
 	//update svrcmdhis fail
 	private String hisfldvalssptrn4 = "%s,'%s','%s','%s','%s','%s', '%s'";
@@ -154,7 +155,7 @@ public class Conductor implements Runnable {
 			selfld = cmdtbfields;
 			selkey = cmdtbsearkey;
 		}
-		// 20220607 MAtsudairaSyuME
+		// 20220607 MetsudairaSyuMe
 		try {
 			if (jdawcon == null)
 				jdawcon = new GwDao(dburl, dbuser, dbpass, false);
@@ -213,7 +214,7 @@ public class Conductor implements Runnable {
 												sno = cmdhiscon.INSSELChoiceKey(svrcmdhistbname, svrcmdhistbfields,
 														failfldvals, svrcmdhistbsearkey, chksno[0], false, false);
 												/*
-												 * 20220607 MAtsudairaSyuMe cmdhiscon.CloseConnect(); cmdhiscon = null;
+												 * 20220607 MatsudairaSyuMe cmdhiscon.CloseConnect(); cmdhiscon = null;
 												 */
 												sno = null;
 											}
