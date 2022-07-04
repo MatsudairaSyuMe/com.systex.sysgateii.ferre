@@ -62,7 +62,7 @@ public class mdworker2 implements IDetachedRunnable {
 			do {
 				resultmsg = dispatcher.getResultTelegram(telegramKey);
 				if (resultmsg != null) {
-					log.debug("I: {} getResultTelegram resultmsg=[{}]", this.workname, resultmsg);
+					log.debug("I: {} getResultTelegram request address [{}] resultmsg=[{}]", this.workname, clientAddress.toString(), resultmsg);
 					break;
 				} else {
 					try {
@@ -71,6 +71,12 @@ public class mdworker2 implements IDetachedRunnable {
 					}
 				}
 			} while (++reTry < this.totalReTryTime);
+			//20220613 MatsudairaSyuME check if timeout
+			if (resultmsg == null) {
+				log.error("I: {} getResultTelegram timeout !!!! request address [{}] make E001 error message", this.workname, clientAddress.toString());
+				resultmsg = "".getBytes();
+			}
+			//----
 			request.addFirst(new ZFrame(resultmsg));
 			reply = request; // Echo is complex , just for test :-)
 		}

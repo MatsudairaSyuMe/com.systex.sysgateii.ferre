@@ -347,6 +347,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		this.iFirst = 0;
 		//20210627 MatsudairaSyuMe add Majordomo Protocol processing
 		this.clientSession = new mdcliapi2("tcp://localhost:5555", true);
+		this.clientSession.setTimeout(PrnSvr.getReqTime());//20220613
 		//----
 		this.descm = new DscptMappingTable();
 		//20200716 add for message table
@@ -499,9 +500,19 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				this.rmtaddr.getPort(),this.localHostAddr, this.localaddr.getPort(), this.typeid, Constants.STSNOTUSED);
 		//----
 		try {
-			if (jsel2ins == null)
+			if (jsel2ins == null) {
 				jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
-			int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, "'" + this.brws + "'" + "," + PrnSvr.svrid);  //20220525 change this.brws to "'" + this.brws + "'"
+				String selfld = "";
+				if (PrnSvr.svrtbsdytbfields.indexOf(',') > -1) {
+					String[] fldary = PrnSvr.svrtbsdytbfields.split(",");
+					selfld = fldary[1];
+				} else
+					selfld = PrnSvr.svrtbsdytbfields;
+				jsel2ins.SELTBSDY_R(PrnSvr.svrtbsdytbname, selfld, PrnSvr.svrtbsdytbmkey, "?", true);  //20220613 MatsudairaSyuMe
+				jsel2ins.UPSERT_R(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, "'" + this.brws + "'" + "," + PrnSvr.svrid, true);
+			}
+//			int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, "'" + this.brws + "'" + "," + PrnSvr.svrid);  //20220525 change this.brws to "'" + this.brws + "'"
+			int row = jsel2ins.UPSERT_R(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, "'" + this.brws + "'" + "," + PrnSvr.svrid, false);  //20220613 MatsudairaSyuMe
 			//20210827 MatsudairaSyuMe set to current mode to on init Constants.STSNOTUSED
 			log.debug("total {} records update  status [{}]", row, Constants.STSNOTUSED);
 			//----
@@ -596,7 +607,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 						public void initChannel(SocketChannel ch) throws Exception {
 							ch.pipeline().addLast("log", new LoggingHandler(PrtCli.class, LogLevel.INFO));
 							ch.pipeline().addLast(new IdleStateHandler(((PrnSvr.getReqTime() > 110) ? (PrnSvr.getReqTime() - 10) : PrnSvr.getReqTime()), 0, 0, TimeUnit.MILLISECONDS)); //20220430 MatsudairaSyuMe 200 change to use getReadIdleTime()
-							ch.pipeline().addLast(new IdleStateHandler(100, 0, 0, TimeUnit.MILLISECONDS));  //20220425 MatsudairaSyuMe 200 changed to used getReadIdleTime()
+							//ch.pipeline().addLast(new IdleStateHandler(100, 0, 0, TimeUnit.MILLISECONDS));  //20220425 MatsudairaSyuMe 200 changed to used getReadIdleTime()
 							ch.pipeline().addLast(getHandler("PrtCli"));
 						}
 					});
@@ -803,7 +814,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				this.rmtaddr.getPort(),this.localHostAddr, this.localaddr.getPort(), this.typeid, Constants.STSUSEDACT);
 		if (jsel2ins == null)
 			jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
-		int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, "'" + this.brws + "'" + "," + PrnSvr.svrid);  //20220525 MatsudairaSyuMe change this.brws to "'" + this.brws + "'"
+//		int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, "'" + this.brws + "'" + "," + PrnSvr.svrid);  //20220525 MatsudairaSyuMe change this.brws to "'" + this.brws + "'"
+		int row = jsel2ins.UPSERT_R(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, "'" + this.brws + "'" + "," + PrnSvr.svrid, false);//20220613 MatsudairaSyuMe
 //----
 		log.debug("total {} records update status [{}]", row, Constants.STSUSEDACT);
 //20220525		jsel2ins.CloseConnect();
@@ -827,7 +839,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				this.rmtaddr.getPort(),this.localHostAddr, this.localaddr.getPort(), this.typeid, Constants.STSUSEDINACT);
 		if (jsel2ins == null)
 			jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
-		int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, "'" + this.brws + "'" + "," + PrnSvr.svrid); //20220525 MatsudairasyuMe change this.brws to "'" + this.brws + "'"
+		//int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, "'" + this.brws + "'" + "," + PrnSvr.svrid); //20220525 MatsudairasyuMe change this.brws to "'" + this.brws + "'"
+		int row = jsel2ins.UPSERT_R(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, "'" + this.brws + "'" + "," + PrnSvr.svrid, false); //20220613 MatsudairasyuMe
 		log.debug("total {} records update  status [{}]", row, Constants.STSUSEDINACT);
 //20220525		jsel2ins.CloseConnect();
 //		jsel2ins = null;
@@ -914,7 +927,8 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 		try {
 			if (jsel2ins == null)
 				jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
-			int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, "'" + this.brws + "'" + "," + PrnSvr.svrid); //20220525 MatsudairaSyuMe change this.brws to "'" + this.brws + "'"
+//			int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, "'" + this.brws + "'" + "," + PrnSvr.svrid); //20220525 MatsudairaSyuMe change this.brws to "'" + this.brws + "'"
+			int row = jsel2ins.UPSERT_R(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey, "'" + this.brws + "'" + "," + PrnSvr.svrid, false); //20220613 MatsudairaSyuMe
 			//20210827 MatsudairaSyuMe if current mode CurMode SHUTDOWN/RESTART device stat set to Constants.STSNOTUSED otherwise Constants.STSUSEDINACT
 			log.debug("total {} records update  status [{}]", row, (getCurMode() == EventType.SHUTDOWN || getCurMode() == EventType.RESTART) ? Constants.STSNOTUSED : Constants.STSUSEDINACT );
 			//----
@@ -1324,7 +1338,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				//處理摘要
 				byte dtype[] = p0080DataFormat.getTotaTextValueSrc("dsptype", pb_arr.get(i));
 				byte[] dsptb = null;
-				byte[] dsptbsnd = null;
+				byte[] dsptbsnd = new byte[24];  //20220701 MatsudairaSyuMe
 				if (dtype[0] == (byte)'9') {
 					dsptb = p0080DataFormat.getTotaTextValueSrc("dsptext", pb_arr.get(i));
 					dsptb = FilterBig5(dsptb);
@@ -1336,7 +1350,13 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					else
 						dsptb = desc.getBytes();
 				}
-				dsptbsnd = dsptb;
+				//20220701 MatsudairaSyuMe
+				//dsptbsnd = dsptb;
+				Arrays.fill(dsptbsnd, (byte)' ');
+				System.arraycopy(dsptb, 0, dsptbsnd, 0, dsptb.length);
+				//---- 20220701
+				//20220630 MatsudairaSyuMe dsptblen
+				int dsptblen = dsptbsnd.length;
 //				pbpr_dscpt = new String(FilterChi(pbpr_dscpt.getBytes()));
 				//20100503 by Han 支出摘要第12位或若為中文碼時，轉為空白
 				//20100503 by Han 存入摘要第17位或若為中文碼時，轉為空白
@@ -1369,10 +1389,12 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					pbpr_crdb = String.format("%12s", new String(dsptb, "BIG5"));
 //					pbpr_crdblog = String.format("%12s", new String(dsptb));
 					pbpr_crdblog = String.format("%12s", new String(dsptb, "BIG5"));
+					dsptblen = 12;  //20220630 MatsudairaSyuMe dsptblen
 				} else {
 					pbpr_crdb = String.format("%17s", new String(dsptb, "BIG5"));
 //					pbpr_crdblog = String.format("%17s", new String(dsptb));
 					pbpr_crdblog = String.format("%17s", new String(dsptb, "BIG5"));
+					dsptblen = 17;  //20220630 MatsudairaSyuMe dsptblen
 				}
 				//處理支出收入金額
 				double dTxamt = 0.0;
@@ -1394,11 +1416,11 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					*/
 					//20210419 MatsudairaSyume reduce one space
 					//pbpr_crdb = pbpr_crdb + String.format("%18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "        ");
-					pbpr_crdb = pbpr_crdb + String.format("%18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "       ");
-					
-					pbpr_crdbT = String.format("%18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "       ");
-					
-					pbpr_crdblog = pbpr_crdblog + String.format("%18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "       ");
+					pbpr_crdb = pbpr_crdb + String.format("          %18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "       ");//20220630 MatsudairaSyuMe dsptbsnd left shift two column
+					//20220630 MatsudairaSyuMe dsptbsnd left shift two column
+					pbpr_crdbT = String.format("          %18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "       ");
+					//20220630 MatsudairaSyuMe dsptbsnd left shift two column
+					pbpr_crdblog = pbpr_crdblog + String.format("          %18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT) + "       ");
 					//----
 					//----
 				} else {
@@ -1420,18 +1442,18 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 					*/
 					//20210419 MatsudairaSyume reduce one space
 					//pbpr_crdb = pbpr_crdb + String.format("                 %18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT));
-					pbpr_crdb = pbpr_crdb + String.format("                %18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT));
+					pbpr_crdb = pbpr_crdb + String.format("                 %18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT));//20220630 MatsudairaSyuMe dsptbsnd left shift one column
 
-					pbpr_crdbT = String.format("                %18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT));
+					pbpr_crdbT = String.format("                 %18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT));//20220630 MatsudairaSyuMe dsptbsnd left shift one column
 
-					pbpr_crdblog = pbpr_crdblog + String.format("                %18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT));
+					pbpr_crdblog = pbpr_crdblog + String.format("                 %18s", dataUtil.rfmtdbl(dTxamt, TXP.AMOUNT));//20220630 MatsudairaSyuMe dsptbsnd left shift one column
 					//----
 				}
 				pr_datalog = pr_data;
 				//20210419 MatsudairaSyume reduce one space change from %35s to %34s
-				pbpr_crdb = String.format("%34s", pbpr_crdb);
+				pbpr_crdb = String.format("%35s", pbpr_crdb); //20220630 MatsudairaSyuMe dsptbsnd left shift two column
 				//20210419 MatsudairaSyume reduce one space change from %35s to %34s
-				pbpr_crdbT = String.format("%34s", pbpr_crdbT);
+				pbpr_crdbT = String.format("%35s", pbpr_crdbT);//20220630 MatsudairaSyuMe dsptbsnd left shift two column
 
 				log.debug("pbpr_crdb len={} pbpr_crdbT [{}] len={}", pbpr_crdb.length(), pbpr_crdbT, pbpr_crdbT.length());
 
@@ -1439,7 +1461,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 
 				pr_data = pr_data + pbpr_crdb;
 				//20210419 MatsudairaSyume reduce one space change from %35s to %34s
-				pr_datalog = pr_datalog + String.format("%34s", pbpr_crdblog);
+				pr_datalog = pr_datalog + String.format("%35s", pbpr_crdblog);
 				//處理結存
 				String sbalbuff = "";
 				sbalbuff = new String(p0080DataFormat.getTotaTextValueSrc("spbbal", pb_arr.get(i)));
@@ -1517,8 +1539,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				byte[] sndbary = new byte[pr_dataprev.getBytes().length + pbpr_crdbT.getBytes().length];
 				System.arraycopy(pr_dataprev.getBytes(), 0, sndbary, 0, pr_dataprev.getBytes().length);
 				System.arraycopy(pbpr_crdbT.getBytes(), 0, sndbary, pr_dataprev.getBytes().length, pbpr_crdbT.getBytes().length);
-				System.arraycopy(dsptbsnd, 0, sndbary, pr_dataprev.getBytes().length+1, dsptbsnd.length);
-				
+				System.arraycopy(dsptbsnd, 0, sndbary, pr_dataprev.getBytes().length, dsptblen);  //20220630 MatsudairaSyuMe use dsptblen
 //				prt.Prt_Text(pr_data.getBytes());
 				//20200915
 				if (skipbytes != null && skipbytes.length > 0) 
@@ -1981,7 +2002,7 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				byte[] sndbary = new byte[pr_dataprev.getBytes().length + pbpr_crdbT.getBytes().length];
 				System.arraycopy(pr_dataprev.getBytes(), 0, sndbary, 0, pr_dataprev.getBytes().length);
 				System.arraycopy(pbpr_crdbT.getBytes(), 0, sndbary, pr_dataprev.getBytes().length, pbpr_crdbT.getBytes().length);
-				System.arraycopy(dsptb, 0, sndbary, pr_dataprev.getBytes().length + 1, dsptb.length);
+				System.arraycopy(dsptb, 0, sndbary, pr_dataprev.getBytes().length, dsptb.length);  //20220630 MatsudairaSyuMe dsptbsnd left shift one column
 				//20200915
 				if (skipbytes != null && skipbytes.length > 0) 
 					prt.Prt_Text(skipbytes, sndbary);
@@ -3425,8 +3446,10 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 						//----
 						if (jsel2ins == null)
 							jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
-						int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey,
-							"'" + this.brws + "'" + "," + PrnSvr.svrid);  //20220525 MatsudairaSyuMe change this.brws to "'" + this.brws + "'"
+//						int row = jsel2ins.UPSERT(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey,
+//							"'" + this.brws + "'" + "," + PrnSvr.svrid);  //20220525 MatsudairaSyuMe change this.brws to "'" + this.brws + "'"
+						int row = jsel2ins.UPSERT_R(PrnSvr.statustbname, PrnSvr.statustbfields, updValue, PrnSvr.statustbmkey,
+								"'" + this.brws + "'" + "," + PrnSvr.svrid, false);  //20220613 MatsudairaSyuMe
 						//20210826 MatsudairaSyuMe if current mode CurMode SHUTDOWN/RESTART device stat set to Constants.STSNOTUSED or Constants.STSUSEDINACT
 						log.debug("total {} records update status [{}]", row, Constants.STSNOTUSED);
 						//----
@@ -4584,11 +4607,13 @@ public class PrtCli extends ChannelDuplexHandler implements Runnable, EventListe
 				selfld = fldary[1];
 			} else
 				selfld = PrnSvr.svrtbsdytbfields;
-			if (jsel2ins == null)
+			if (jsel2ins == null) {
 				jsel2ins = new GwDao(PrnSvr.dburl, PrnSvr.dbuser, PrnSvr.dbpass, false);
+				jsel2ins.SELTBSDY_R(PrnSvr.svrtbsdytbname, selfld, PrnSvr.svrtbsdytbmkey, "?", true);  //20220613 MatsudairaSyuMe
+			}
 			//20201115
-		//	String tbsdy = jsel2ins.SELONEFLD(PrnSvr.svrtbsdytbname, selfld, PrnSvr.svrtbsdytbmkey, PrnSvr.svrid, true).trim();
-			String tbsdy = jsel2ins.SELONEFLD(PrnSvr.svrtbsdytbname, selfld, PrnSvr.svrtbsdytbmkey, PrnSvr.bkno, true).trim();
+//			String tbsdy = jsel2ins.SELONEFLD(PrnSvr.svrtbsdytbname, selfld, PrnSvr.svrtbsdytbmkey, PrnSvr.bkno, true).trim();  20220613
+			String tbsdy = jsel2ins.SELTBSDY_R(PrnSvr.svrtbsdytbname, selfld, PrnSvr.svrtbsdytbmkey, PrnSvr.bkno, false).trim();
 			log.debug("current tbsdy [{}]", tbsdy);
 			if (tbsdy != null && tbsdy.length() >= 7)
 				this.fepdd = tbsdy.substring(tbsdy.length() - 2).getBytes();

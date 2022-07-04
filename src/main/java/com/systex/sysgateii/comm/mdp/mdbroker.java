@@ -199,6 +199,10 @@ public class mdbroker  implements Runnable {
      * Process a request coming from a client.
      */
     private void processClient(ZFrame sender, ZMsg msg) {
+        if (verbose) {
+            log.debug("I: processClient msg.size=[{}]", msg.size());
+        }
+
         assert (msg.size() >= 2); // Service name + body
         ZFrame serviceFrame = msg.pop();
         // Set reply return address to client sender
@@ -214,6 +218,10 @@ public class mdbroker  implements Runnable {
      * Process message sent to us by a worker.
      */
     private void processWorker(ZFrame sender, ZMsg msg) {
+        if (verbose) {
+            log.debug("I: processWorker msg.size=[{}]", msg.size());
+        }
+
         assert (msg.size() >= 1); // At least, command
 
         ZFrame command = msg.pop();
@@ -265,6 +273,10 @@ public class mdbroker  implements Runnable {
      * Deletes worker from all data structures, and destroys worker.
      */
     private void deleteWorker(Worker worker, boolean disconnect) {
+        if (verbose) {
+            log.debug("I: deleteWorker");
+        }
+
         assert (worker != null);
         if (disconnect) {
             sendToWorker(worker, MDP.W_DISCONNECT, null, null);
@@ -279,6 +291,10 @@ public class mdbroker  implements Runnable {
      * Finds the worker (creates if necessary).
      */
     private Worker requireWorker(ZFrame address) {
+        if (verbose) {
+            log.debug("I: requireWorker");
+        }
+
         assert (address != null);
         String identity = address.strhex();
         Worker worker = workers.get(identity);
@@ -295,6 +311,10 @@ public class mdbroker  implements Runnable {
      * Locates the service (creates if necessary).
      */
     private Service requireService(ZFrame serviceFrame) {
+        if (verbose) {
+            log.debug("I: requireService name=[{}]", serviceFrame.toString());
+        }
+
         assert (serviceFrame != null);
         String name = serviceFrame.toString();
         Service service = services.get(name);
@@ -373,16 +393,23 @@ public class mdbroker  implements Runnable {
      * Dispatch requests to waiting workers as possible
      */
     private void dispatch(Service service, ZMsg msg) {
+        if (verbose) {
+             log.debug("I:service=[{}] msg=[{}]", service, msg);
+        }
         assert (service != null);
         if (msg != null)// Queue message if any
             service.requests.offerLast(msg);
-            purgeWorkers();
-            while (!service.waiting.isEmpty() && !service.requests.isEmpty()) {
-                msg = service.requests.pop();
-                Worker worker = service.waiting.pop();
-                waiting.remove(worker);
-                sendToWorker(worker, MDP.W_REQUEST, null, msg);
-                msg.destroy();
+        purgeWorkers();
+        if (verbose) {
+             log.debug("I:service.waiting.size=[{}] service.requests.size=[{}]", service.waiting.size(), service.requests.size());
+        }
+        while (!service.waiting.isEmpty() && !service.requests.isEmpty()) {
+            log.debug("I:dispatch service.waiting.isEmpty() == false &&  service.requests.isEmpty() == false");
+            msg = service.requests.pop();
+            Worker worker = service.waiting.pop();
+            waiting.remove(worker);
+            sendToWorker(worker, MDP.W_REQUEST, null, msg);
+            msg.destroy();
         }
     }
 

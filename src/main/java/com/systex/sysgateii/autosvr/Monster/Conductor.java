@@ -13,14 +13,13 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 //20210909 MatsudairaSyuMe conductor only
 import com.systex.sysgateii.autosvr.Server;
 //---
 import com.systex.sysgateii.autosvr.comm.Constants;
 import com.systex.sysgateii.autosvr.dao.GwDao;
 import com.systex.sysgateii.autosvr.util.DateTimeUtil;
-//import com.systex.sysgateii.autosvr.util.StrUtil;
+//import com.systex.sysgateii.autosvr.util.StrUtil; 20210909 markup
 
 public class Conductor implements Runnable {
 	private static Logger log = LoggerFactory.getLogger(Conductor.class);
@@ -61,8 +60,8 @@ public class Conductor implements Runnable {
 	}
 
 	public static void startServer() {
-		log.debug("Enter startServer Conductor check table[{}] svrnodelist size=[{}]",svrprmtb, Conductor.svridnodeMap.size());
-		// 20210828 MatsudairaSyuMe start conductor only
+		log.debug("Enter startServer Conductor check table[{}] svrnodelist size=[{}]", svrprmtb,
+				Conductor.svridnodeMap.size());
 		// 20210828 MatsudairaSyuMe start conductor only
 //		if (!getSvrip().equalsIgnoreCase("r")) {  20210909 mark up
 			// ----
@@ -79,25 +78,24 @@ public class Conductor implements Runnable {
 							log.debug("idx:[{}]=[{}]", idx, svrfldsary[idx].trim());
 						}
 					} else if (s.length() > 0) {
-					    log.debug("get SERVICE [{}] in service table [{}]", s, svrprmtb);
-					// 20210302 MatsudairsSyuMe
-//					String[] setArg = {"bin/autosvr", "start", "--svrid", s};
-//					DoProcessBuilder dp = new DoProcessBuilder(setArg);
-//					DoProcessBuilder dp = new DoProcessBuilder("bin/autosvr", "start", "--svrid", s);
-//					dp.Go();
-					//2021090 9MatsudairsSyuMe check if start conductor only
-					// 20210202, MatsudairsSyuMe
-					    if (!Server.getIsConductorRestore()) {
-						    DoProcessBuilder dp = new DoProcessBuilder();
-						    dp.Go("bin/autosvr", "start", "--svrid", s);
-						    // store new service
-						}
-						//20210911 init svrinode while conduct and restore mode
+						log.debug("get SERVICE [{}] in service table [{}]", s, svrprmtb);
+						// 20210302 MatsudairsSyuMe
+//						String[] setArg = {"bin/autosvr", "start", "--svrid", s};
+//						DoProcessBuilder dp = new DoProcessBuilder(setArg);
+//						DoProcessBuilder dp = new DoProcessBuilder("bin/autosvr", "start", "--svrid", s);
+//						dp.Go();
+						//2021090 9MatsudairsSyuMe check if start conductor only
+						// 20210202, MatsudairsSyuMe
+						if (!Server.getIsConductorRestore()) {
+							DoProcessBuilder dp = new DoProcessBuilder();
+							dp.Go("bin/autosvr", "start", "--svrid", s);
+						}// store new service
+						//20210911 MatsudairaSyuMe init set svridnode while conductor and restore mode
 						Conductor.svridnodeMap.put(s, getSvrip());
 						//----
-					// ----
+						// ----
 					} else
-					    log.error("ERROR!!! SERVICE parameters error in service table [{}] !!!", svrprmtb);
+						log.error("ERROR!!! SERVICE parameters error in service table [{}] !!!", svrprmtb);
 				}
 			} else {
 				log.error("ERROR!!! no svrid exist in table while IP=[{}] !!!", getSvrip());
@@ -123,7 +121,6 @@ public class Conductor implements Runnable {
 		else
 			log.error("ERROR!!! url not set conductor moniter can't be initiated !!!!");
 	}
-
 	public static void stopServer() {
 		if (server != null) {
 			server.stop(0);
@@ -155,19 +152,29 @@ public class Conductor implements Runnable {
 			selfld = cmdtbfields;
 			selkey = cmdtbsearkey;
 		}
-		// 20220607 MetsudairaSyuMe
+		// 20220607 MatsudairaSyuMe
 		try {
-			if (jdawcon == null)
+			if (jdawcon == null) {
 				jdawcon = new GwDao(dburl, dbuser, dbpass, false);
+				//20220613 MatsudairaSyuMe
+				//log.info("initial select svrcmdtbl [{}]", jdawcon.SELMFLD_R(cmdtbname, selfld, selkey, "?", true));
+				jdawcon.SELMFLD_R(cmdtbname, selfld, selkey, "?", true);
+				log.info("initial delete SVRID svrcmdtbl [{}]", jdawcon.DELETETB_R(cmdtbname, "SVRID", "?", true));
+				//----
+			}
 			if (cmdhiscon == null)
 				cmdhiscon = new GwDao(dburl, dbuser, dbpass, false);
-			// ----
+		// ----
 			while (true) {
 				log.info("monitorThread");
 				try {
 					// 20220607 MatsydairaSyuMe jdawcon = new GwDao(dburl, dbuser, dbpass, false);
 					log.debug("current selfld=[{}] selkey=[{}] cmdtbsearkey=[{}]", selfld, selkey, cmdtbsearkey);
-					String[] cmd = jdawcon.SELMFLD(cmdtbname, selfld, selkey, "'" + getSvrip() + "'", false);
+					//20220613 MatsudairasyuMe Change to use reused prepared statement
+					//String[] cmd = jdawcon.SELMFLD(cmdtbname, selfld, selkey, "'" + getSvrip() + "'", false);
+//					log.debug("current connect [{}]",jdawcon.getConn().isValid(1));
+					String[] cmd = jdawcon.SELMFLD_R(cmdtbname, selfld, selkey, "'" + getSvrip() + "'", false);
+					//----
 					if (cmd != null && cmd.length > 0)
 						for (String s : cmd) {
 							// 20210302 MatsudairaSyuMe check row command not null
@@ -218,7 +225,7 @@ public class Conductor implements Runnable {
 												 */
 												sno = null;
 											}
-											jdawcon.DELETETB(cmdtbname, "SVRID", cmdary[0]);
+											jdawcon.DELETETB_R(cmdtbname, "SVRID", cmdary[0], false);  //20220613 change to use reused statement
 											continue;
 										}
 										// ----
@@ -505,7 +512,7 @@ public class Conductor implements Runnable {
 				}
 				sleep(3);
 			}
-			// 20220607 MatsudairaSyuMe
+		// 20220607 MatsudairaSyuMe
 		} catch (Exception e) {
 			e.printStackTrace();
 			log.error("jdawcon error:{}", e.getMessage());
@@ -514,6 +521,8 @@ public class Conductor implements Runnable {
 				try {
 					jdawcon.CloseConnect();
 				} catch (Exception any) {
+					any.printStackTrace();
+					log.error("jdawcon close error ignore");
 				}
 				jdawcon = null;
 			}
@@ -521,6 +530,8 @@ public class Conductor implements Runnable {
 				try {
 					cmdhiscon.CloseConnect();
 				} catch (Exception any) {
+					any.printStackTrace();
+					log.error("cmdhiscon close error ignore");
 				}
 			cmdhiscon = null;
 		}

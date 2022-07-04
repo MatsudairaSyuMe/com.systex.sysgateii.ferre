@@ -63,7 +63,7 @@ public class mdcliapi2 {
 			return null; // Interrupted
 
 		if (items.pollin(0)) {
-			ZMsg msg = ZMsg.recvMsg(client);
+			ZMsg msg = ZMsg.recvMsg(client, ZMQ.DONTWAIT);
 			if (verbose) {
 				log.debug("I: received reply:");
 				//msg.dump(log.out());
