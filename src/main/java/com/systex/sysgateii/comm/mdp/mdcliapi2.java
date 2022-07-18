@@ -15,7 +15,7 @@ public class mdcliapi2 {
 	private String broker;
 	private ZContext ctx;
 	private ZMQ.Socket client;
-	private long timeout = 3000;
+	private long timeout = 3000; //20220718 MatsudairaSyuMe change from 3000 to 30000
 	private boolean verbose;
 	//private Formatter log = new Formatter(System.out);
 
@@ -59,15 +59,16 @@ public class mdcliapi2 {
 		// Poll socket for a reply, with timeout
 		ZMQ.Poller items = ctx.createPoller(1);
 		items.register(client, ZMQ.Poller.POLLIN);
-		if (items.poll(timeout * 1000) == -1)
+		if (items.poll(timeout) == -1)//20220718 change from timeout * 1000 to timeout 
 			return null; // Interrupted
+		if (verbose) {
+			log.debug("I: set timeout=[{}]", timeout);
+			//msg.dump(log.out());
+		}
 
 		if (items.pollin(0)) {
-			ZMsg msg = ZMsg.recvMsg(client, ZMQ.DONTWAIT);
-			if (verbose) {
-				log.debug("I: received reply:");
-				//msg.dump(log.out());
-			}
+
+			ZMsg msg = ZMsg.recvMsg(client);
 			// Don't try to handle errors, just assert noisily
 			assert (msg.size() >= 4);
 

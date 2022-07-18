@@ -59,22 +59,25 @@ public class mdworker2 implements IDetachedRunnable {
 			log.debug("I: {} send fas [{}]", this.workname, alreadySendTelegram);
 			request.clear();
 			int reTry = 0;
-			do {
-				resultmsg = dispatcher.getResultTelegram(telegramKey);
-				if (resultmsg != null) {
-					log.debug("I: {} getResultTelegram request address [{}] resultmsg=[{}]", this.workname, clientAddress.toString(), resultmsg);
-					break;
-				} else {
-					try {
-						Thread.sleep(this.retryInterval);
-					} catch (InterruptedException e) {
+			if (alreadySendTelegram) //20220715 MatsudairaSyuMe check if send ok!!
+				do {
+					resultmsg = dispatcher.getResultTelegram(telegramKey);
+					if (resultmsg != null) {
+						log.debug("I: {} getResultTelegram request address [{}] resultmsg=[{}]", this.workname, clientAddress.toString(), resultmsg);
+						break;
+					} else {
+						try {
+							Thread.sleep(this.retryInterval);
+						} catch (InterruptedException e) {
+						}
 					}
-				}
-			} while (++reTry < this.totalReTryTime);
-			//20220613 MatsudairaSyuME check if timeout
-			if (resultmsg == null) {
+				} while (++reTry < this.totalReTryTime);
+			else
+				resultmsg = dispatcher.mkE002(telegramKey);  //20220715 MatsudairaSyuMe format error or connect error
+			//202206715 MatsudairaSyuME check if timeout
+			if (resultmsg == null || reTry >= this.totalReTryTime) {
 				log.error("I: {} getResultTelegram timeout !!!! request address [{}] make E001 error message", this.workname, clientAddress.toString());
-				resultmsg = "".getBytes();
+				resultmsg = dispatcher.mkE001(telegramKey);  //20220715 MatsudairaSyuMe rimeout
 			}
 			//----
 			request.addFirst(new ZFrame(resultmsg));
