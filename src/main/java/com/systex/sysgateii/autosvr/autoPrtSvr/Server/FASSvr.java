@@ -385,12 +385,12 @@ public class FASSvr implements MessageListener<byte[]>, Runnable {
 	}
 	//20220715 make  E001 Telegram
 	public byte[] mkE001(String telegramKey) {
-		String E001 = String.format("%sCB0011    PE0010077                                           ", telegramKey);
+		String E001 = String.format("%sCB0011    PE0010077                                              ", telegramKey);
 		return E001.getBytes();
 	}
 	//20220715 make  E002 Telegram
 	public byte[] mkE002(String telegramKey) {
-		String E002 = String.format("%sCB0011    PA6510077                                           "	, telegramKey);
+		String E002 = String.format("%sCB0011    PA6510077                                              ", telegramKey);
 		return E002.getBytes();
 	}
 	//----

@@ -6,6 +6,7 @@ import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
 //20220221 MatsudairaSyuMe drop non-service telegram
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -19,6 +20,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
+import com.systex.sysgateii.autosvr.autoPrtSvr.Server.PrnSvr;
 import com.systex.sysgateii.autosvr.comm.Constants;
 import com.systex.sysgateii.autosvr.comm.TXP;
 import com.systex.sysgateii.autosvr.listener.ActorStatusListener;
@@ -171,21 +173,37 @@ public class FASClientChannelHandler extends ChannelInboundHandlerAdapter {
 							{
 								log.warn("receive TOTA-MSGID=[{}] non-service telegram drop it !!!", checkTRN);
 							} else {
-								//20220221----
-							    String telegramKey = dataUtil.getTelegramKey(resultmsg);
-							    if (Constants.incomingTelegramMap.containsKey(telegramKey)) {
-								    if (Constants.incomingTelegramMap.replace(telegramKey, resultmsg) == null)
-									    log.error("new incoming update by telegramKey [{}] into map table error!!!!",
-											telegramKey);
-								    else
-									    log.debug("new incoming already update by telegramKey [{}] into map table",
-											telegramKey);
-							    } else {
-								    Constants.incomingTelegramMap.put(telegramKey, resultmsg);
-								    log.debug("new incoming telegram put into map table by telegramKey [{}]", telegramKey);
-							    }
-							    log.debug("new incoming telegram map table size=[{}]",
-									Constants.incomingTelegramMap.size());
+							//---- 20220221
+								//20220719 MatsudairaSyuMe check if telegram expired
+								String telegramKey = dataUtil.getTelegramKey(resultmsg);
+								if (Constants.outgoingTelegramKeyMap.containsKey(telegramKey)) {
+									long ot = (long) Constants.outgoingTelegramKeyMap.get(telegramKey);
+									if ((System.currentTimeMillis() - ot) <= PrnSvr.setResponseTimeout) {
+										if (Constants.incomingTelegramMap.containsKey(telegramKey)) {
+											if (Constants.incomingTelegramMap.replace(telegramKey, resultmsg) == null)
+												log.error("new incoming update by telegramKey [{}] into map table error!!!!", telegramKey);
+											else
+												log.debug("new incoming already update by telegramKey [{}] into map table", telegramKey);
+										} else {
+											Constants.incomingTelegramMap.put(telegramKey, resultmsg);
+											log.debug("new incoming telegram put into map table by telegramKey [{}]", telegramKey);
+										}
+										log.debug("new incoming telegram map table size=[{}]", Constants.incomingTelegramMap.size());
+									} else {
+										SimpleDateFormat df = new SimpleDateFormat("MM-dd-yyyy HH:mm:ss.SSS");
+										String lastTime = df.format(ot);
+										log.error("!!!! receive TOTA-telegramKey=[{}] in outgoingTelegramKeyMap time=[{}] already expired [{}] drop it !!!", telegramKey, lastTime, PrnSvr.setResponseTimeout);
+										Constants.outgoingTelegramKeyMap.remove(telegramKey);
+										if (Constants.incomingTelegramMap.containsKey(telegramKey)) {
+											Constants.incomingTelegramMap.remove(telegramKey);
+											log.error("!!!! receive TOTA-telegramKey=[{}] also remove from incomingTelegramMap", telegramKey);
+										}
+									}
+								//20220719 MatsudairasyuMe  telegram no register in outgoingTelegramKeyMap drop it
+								} else {
+									log.warn("receive TOTA-telegramKey=[{}] not exist in outgoingTelegramKeyMap telegram drop it !!!", telegramKey);
+								}
+								//----
 						    }
 						}
 					}

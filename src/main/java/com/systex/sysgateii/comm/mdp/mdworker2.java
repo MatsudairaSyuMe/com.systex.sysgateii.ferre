@@ -74,10 +74,9 @@ public class mdworker2 implements IDetachedRunnable {
 				} while (++reTry < this.totalReTryTime);
 			else
 				resultmsg = dispatcher.mkE002(telegramKey);  //20220715 MatsudairaSyuMe format error or connect error
-			//202206715 MatsudairaSyuME check if timeout
+			//202206722 MatsudairaSyuME check if timeout
 			if (resultmsg == null || reTry >= this.totalReTryTime) {
-				log.error("I: {} getResultTelegram timeout !!!! request address [{}] make E001 error message", this.workname, clientAddress.toString());
-				resultmsg = dispatcher.mkE001(telegramKey);  //20220715 MatsudairaSyuMe rimeout
+				log.error("I: {} getResultTelegram timeout !!!! request address [{}]", this.workname, clientAddress.toString());
 			}
 			//----
 			request.addFirst(new ZFrame(resultmsg));

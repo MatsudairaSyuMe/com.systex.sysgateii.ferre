@@ -404,12 +404,22 @@ public class mdbroker  implements Runnable {
              log.debug("I:service.waiting.size=[{}] service.requests.size=[{}]", service.waiting.size(), service.requests.size());
         }
         while (!service.waiting.isEmpty() && !service.requests.isEmpty()) {
-            log.debug("I:dispatch service.waiting.isEmpty() == false &&  service.requests.isEmpty() == false");
+            /*20220722 MatsudairaSyuMe change to send all pending message
             msg = service.requests.pop();
             Worker worker = service.waiting.pop();
             waiting.remove(worker);
             sendToWorker(worker, MDP.W_REQUEST, null, msg);
             msg.destroy();
+            */
+            Worker worker = service.waiting.pop();
+            do {
+                log.debug("I:dispatch service.requests.size=[{}] dispatch 1 msg", service.requests.size());
+                msg = service.requests.pop();
+                sendToWorker(worker, MDP.W_REQUEST, null, msg);
+                msg.destroy();
+            } while (!service.requests.isEmpty());
+            log.debug("I:dispatch remove work from waiting queue");
+            waiting.remove(worker);
         }
     }
 
