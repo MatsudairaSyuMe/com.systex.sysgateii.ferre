@@ -6,6 +6,7 @@ import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.net.InetSocketAddress;
 import java.nio.charset.Charset;
+import java.text.SimpleDateFormat;  //20220719 MatsudairaSyuMe
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -105,6 +106,8 @@ public class FASSvr implements MessageListener<byte[]>, Runnable {
 			}
 			//20210116 MatsudairaSyuMe for imcoming TOTA telegram Map
 			Constants.incomingTelegramMap.clear();
+			//20220719 MatsudairaSyuMe for outgoing TITA outgoing time
+			Constants.outgoingTelegramKeyMap.clear();
 			//----
 			log.debug("Enter createServer size={}", NODES.length);
 			server = new FASSvr(_map);
@@ -171,59 +174,70 @@ public class FASSvr implements MessageListener<byte[]>, Runnable {
 				int sendlen = TXP.CONTROL_BUFFER_SIZE + telmsg.length;
 				this.currSeqMap = this.ec2.getseqfMap();
 				this.currSeqF = this.currSeqMap.get(this.currConn);
-				int seqno = 0;
-				try {
-					// 20210107 mark for use local parameter
-					/*
-					 * this.setSeqNo = Integer.parseInt(FileUtils.readFileToString(this.currSeqF,
-					 * Charset.defaultCharset())) + 1; //20200910 sdjust setSeqNO from 2 ~ 999 if
-					 * (this.setSeqNo > 999 || this.setSeqNo == 1) this.setSeqNo = 2;
-					 * FileUtils.writeStringToFile(this.currSeqF, Integer.toString(this.setSeqNo),
-					 * Charset.defaultCharset()); header2 =
-					 * String.format("\u0001%03d\u000f\u000f",setSeqNo);
-					 */
-					seqno = Integer.parseInt(FileUtils.readFileToString(this.currSeqF, Charset.defaultCharset()))
-							+ 1;
-					//20210630 MatsudairaSyuMe make sure seqno Exceed the maximum
-					if (seqno >= 999) {
-						seqno = 0;
-					}
-					FileUtils.writeStringToFile(this.currSeqF, Integer.toString(seqno), Charset.defaultCharset());
-					header2 = String.format("\u0001%03d\u000f\u000f", seqno);
+				//20220723 MatsudairaSyuMe change to use Constants.chlSeqNoMap
+				//int seqno = 0;
+				//try {
+				//	// 20210107 mark for use local parameter
+				//	/*
+				//	 * this.setSeqNo = Integer.parseInt(FileUtils.readFileToString(this.currSeqF,
+				//	 * Charset.defaultCharset())) + 1; //20200910 sdjust setSeqNO from 2 ~ 999 if
+				//	 * (this.setSeqNo > 999 || this.setSeqNo == 1) this.setSeqNo = 2;
+				//	 * FileUtils.writeStringToFile(this.currSeqF, Integer.toString(this.setSeqNo),
+				//	 * Charset.defaultCharset()); header2 =
+				//	 * String.format("\u0001%03d\u000f\u000f",setSeqNo);
+				//	 */
+				//	seqno = Integer.parseInt(FileUtils.readFileToString(this.currSeqF, Charset.defaultCharset()))
+				//			+ 1;
+				//	//20210630 MatsudairaSyuMe make sure seqno Exceed the maximum
+				//	if (seqno >= 999) {
+				//		seqno = 0;
+				//	}
+				//	FileUtils.writeStringToFile(this.currSeqF, Integer.toString(seqno), Charset.defaultCharset());
+				//	20220723 change to use Constants.chlSeqNoMap
+				int seqno = Constants.incrementChlAndGetS(String.valueOf(remotsock.getPort()));
+				header2 = String.format("\u0001%03d\u000f\u000f", seqno);
 					//20220715 MatsudairaSyuMe change for get seqno error
 				//} catch (Exception e) {
 				//	log.warn("WORNING!!! update new seq number string {} error {}", seqno, e.getMessage());
 				//}
 					//--
-
-					ByteBuf req = Unpooled.buffer();
-					req.clear();
-					req.writeBytes(header1.getBytes());
-					req.writeBytes(dataUtil.to3ByteArray(sendlen));
-					req.writeBytes(header2.getBytes());
-					req.writeBytes(telmsg);
-					this.currConn.writeAndFlush(req.retain()).sync();
-					rtn = true;
-					try {
-						log.debug(String.format(fasSendPtrn,
-							header1.getBytes().length + dataUtil.to3ByteArray(sendlen).length
-									+ header2.getBytes().length + telmsg.length,
-							charcnv.BIG5bytesUTF8str(telmsg)) + " isCurrConnNull=[" + isCurrConnNull() + "]");
-							faslog.info(//20220409 change to info
-								String.format(fasSendPtrn,
-									header1.getBytes().length + dataUtil.to3ByteArray(sendlen).length
-											+ header2.getBytes().length + telmsg.length,
-									charcnv.BIG5bytesUTF8str(telmsg)));
-						} catch (Exception e) {
-							e.printStackTrace();
-						}
-						// ----
-						// ----
-						//20220715 MatsudairaSyuMe change to error for get seqno error
-					} catch (Exception e) {
-						log.error("ERROR!!! update new seq number string {} error {}", seqno, e.getMessage());
-					}
-					//----
+				ByteBuf req = Unpooled.buffer();
+				req.clear();
+				req.writeBytes(header1.getBytes());
+				req.writeBytes(dataUtil.to3ByteArray(sendlen));
+				req.writeBytes(header2.getBytes());
+				req.writeBytes(telmsg);
+				this.currConn.writeAndFlush(req.retain()).sync();
+				rtn = true;
+				try {
+					log.debug(String.format(fasSendPtrn,
+						header1.getBytes().length + dataUtil.to3ByteArray(sendlen).length
+								+ header2.getBytes().length + telmsg.length,
+						charcnv.BIG5bytesUTF8str(telmsg)) + " isCurrConnNull=[" + isCurrConnNull() + "]");
+					faslog.info(//20220409 change to info
+						String.format(fasSendPtrn,
+								header1.getBytes().length + dataUtil.to3ByteArray(sendlen).length
+										+ header2.getBytes().length + telmsg.length,
+								charcnv.BIG5bytesUTF8str(telmsg)));
+				//} catch (Exception e) {
+				//	e.printStackTrace();
+				//}
+				// ----
+			//20220715 MatsudairaSyuMe change to error for get seqno error
+				} catch (Exception e) {
+					log.error("ERROR!!! update new seq number string {} error {}", seqno, e.getMessage());
+				}
+				//20220719 MatsudairaSyuMe
+				String telegramKey = dataUtil.getTelegramKey(telmsg);
+				SimpleDateFormat df = new SimpleDateFormat("MM-dd-yyyy HH:mm:ss.SSS");
+				long curTimel = System.currentTimeMillis();
+				String ot = df.format(System.currentTimeMillis());
+				if (Constants.outgoingTelegramKeyMap.containsKey(telegramKey))
+					log.warn("telegramKey [{}] already exist on outgoingTelegramKeyMap table will update register time", telegramKey);
+				Constants.outgoingTelegramKeyMap.put(telegramKey, curTimel);
+				log.info("telegramKey [{}] send at [{}]", telegramKey, ot);
+				//----
+			//----
 //20220715 MatsudairaSyuMe			} catch (final InterruptedException e) {
 //20220715 MatsudairaSyuMe				log.debug("get connect from pool error {}", e.getMessage());
 			} catch (final Throwable cause) {
@@ -237,8 +251,6 @@ public class FASSvr implements MessageListener<byte[]>, Runnable {
 		}
 		//----
 	}
-
-
 	//20210107
 	public void releaseConn() {
 		//20210116 MatsydairaSyuMe
@@ -262,12 +274,23 @@ public class FASSvr implements MessageListener<byte[]>, Runnable {
 		synchronized (Constants.incomingTelegramMap) {
 			log.debug("look by telegramKey=[{}] size={}", telegramKey, Constants.incomingTelegramMap.size());
 			byte[] rtn = null;
+			//20220719 MatsudairaSyuMe
+			if (Constants.incomingTelegramMap.containsKey(telegramKey) && Constants.outgoingTelegramKeyMap.containsKey(telegramKey)) {
+				rtn = (byte[]) Constants.incomingTelegramMap.remove(telegramKey);
+				Constants.outgoingTelegramKeyMap.remove(telegramKey);
+				log.debug("get incomming telegram remove [{}] from  outgoingTelegramKeyMap", telegramKey);
+			} else {
+				log.debug("not yet get incomming telegram");
+			}
+			//----
+			/* 20220719 MatsudairaSyuMe mark
 			if (null == (rtn = (byte[]) Constants.incomingTelegramMap.remove(telegramKey))) {
 				log.debug("not yet get incomming telegram");
 			} else {
 				log.debug("get incomming telegram");
 //				releaseConn();
 			}
+			*/
 			return rtn; 
 		}
 	}
@@ -378,7 +401,6 @@ public class FASSvr implements MessageListener<byte[]>, Runnable {
 		TITA_TOTA_START = tITA_TOTA_START;
 		log.info("setTITA_TOTA_START=[{}]", TITA_TOTA_START);
 	}
-
 	//20210112 add by MatsudairaSyuMe TITA_TOTA_START flag checking change to PrtCli
 	public boolean isCurrConnNull() {
 		return this.currConn == null;

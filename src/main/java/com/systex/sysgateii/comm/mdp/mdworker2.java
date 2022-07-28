@@ -41,6 +41,8 @@ public class mdworker2 implements IDetachedRunnable {
     @Override
     public void run(Object[] args) {
 		mdwrkapi workerSession = new mdwrkapi(backend, service, verbose);
+		workerSession.setHeartbeat(2000);  //20220728 MatsudairaSyuMe
+		workerSession.setTimeout(2000);  //20220728 MatsudairaSyuMe
 
 		ZMsg reply = null;
 		while (true) {
@@ -63,7 +65,7 @@ public class mdworker2 implements IDetachedRunnable {
 				do {
 					resultmsg = dispatcher.getResultTelegram(telegramKey);
 					if (resultmsg != null) {
-						log.debug("I: {} getResultTelegram request address [{}] resultmsg=[{}]", this.workname, clientAddress.toString(), resultmsg);
+						log.debug("I: {} getResultTelegram request address [{}] resultmsg=[{}]", this.workname, clientAddress.toString(), new String(resultmsg));
 						break;
 					} else {
 						try {
@@ -82,6 +84,7 @@ public class mdworker2 implements IDetachedRunnable {
 			request.addFirst(new ZFrame(resultmsg));
 			reply = request; // Echo is complex , just for test :-)
 		}
+		log.warn("W: {} workerSession Break!!!", this.workname);
 		workerSession.destroy();
     }
 

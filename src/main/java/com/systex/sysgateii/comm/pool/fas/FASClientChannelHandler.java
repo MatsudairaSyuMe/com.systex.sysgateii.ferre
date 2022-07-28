@@ -91,7 +91,8 @@ public class FASClientChannelHandler extends ChannelInboundHandlerAdapter {
 		MDC.put("LOCAL_ADDRESS", (String) localsock.getAddress().toString());
 		MDC.put("LOCAL_PORT", String.valueOf(localsock.getPort()));
 		clientId = String.valueOf(localsock.getPort());
-		// 20210112 MatsudairaSyume always initialize sequence no. from 0
+		/* 20220723 MAtsudairaSyuMe change to use Constants.chlSeqNoMap
+		//20210112 MatsudairaSyume always initialize sequence no. from 0
 		try {
 			seqNoFile = new File("SEQNO", "SEQNO_" + clientId);
 			log.debug("seqNoFile local=" + seqNoFile.getAbsolutePath());
@@ -104,11 +105,13 @@ public class FASClientChannelHandler extends ChannelInboundHandlerAdapter {
 			}
 			FileUtils.writeStringToFile(seqNoFile, "0", Charset.defaultCharset());
 		} catch (IOException e) {
+			// TODO Auto-generated catch block
 			e.printStackTrace();
 			log.error("fatal error while create seqNofile : {}", e.getMessage());
 		}
-		// ----20210112
+		//----20210112
 		this.seqf_map.put(ctx.channel(), seqNoFile);
+		20220723 change to use Constants.chlSeqNoMap */
 	}
 
 	@Override

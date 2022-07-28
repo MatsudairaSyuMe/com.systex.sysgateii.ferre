@@ -23,6 +23,7 @@ public class mdbroker  implements Runnable {
     private static final int HEARTBEAT_INTERVAL = 2500; // msecs
     private static final int HEARTBEAT_EXPIRY = HEARTBEAT_INTERVAL * HEARTBEAT_LIVENESS;
 
+
     // ---------------------------------------------------------------------
     /**
      * This defines a single service.
@@ -242,6 +243,9 @@ public class mdbroker  implements Runnable {
                 serviceFrame.destroy();
             }
         } else if (MDP.W_REPLY.frameEquals(command)) {
+            if (verbose) {
+                log.debug("I:processWorker W_REPLY workerReady=[{}] current worker.service.waiting.size=[{}]", workerReady, worker.service.waiting.size());
+            }
             if (workerReady) {
                 // Remove & save client return envelope and insert the
                 // protocol header and service name, then rewrap envelope.
@@ -249,7 +253,7 @@ public class mdbroker  implements Runnable {
                 msg.addFirst(worker.service.name);
                 msg.addFirst(MDP.C_CLIENT.newFrame());
                 msg.wrap(client);
-                msg.send(socket);
+                msg.send(socket, true);  //20220727 msg.send(socket); change to msg.send(socket, true);
                 workerWaiting(worker);
             } else {
                 deleteWorker(worker, true);
@@ -267,7 +271,7 @@ public class mdbroker  implements Runnable {
             //msg.dump(log.out());
         }
         msg.destroy();
-    }
+     }
 
     /**
      * Deletes worker from all data structures, and destroys worker.
@@ -350,7 +354,7 @@ public class mdbroker  implements Runnable {
         msg.addFirst(serviceFrame.duplicate());
         msg.addFirst(MDP.C_CLIENT.newFrame());
         msg.wrap(client);
-        msg.send(socket);
+        msg.send(socket, true); //20220727 msg.send(socket); change to msg.send(socket, true);
     }
 
     /**
@@ -404,22 +408,13 @@ public class mdbroker  implements Runnable {
              log.debug("I:service.waiting.size=[{}] service.requests.size=[{}]", service.waiting.size(), service.requests.size());
         }
         while (!service.waiting.isEmpty() && !service.requests.isEmpty()) {
-            /*20220722 MatsudairaSyuMe change to send all pending message
+            log.debug("I:dispatch service.requests.size=[{}] dispatch 1 msg", service.requests.size());
             msg = service.requests.pop();
             Worker worker = service.waiting.pop();
             waiting.remove(worker);
+            log.debug("I:dispatch remove work from waiting queue -->service.waiting.size=[{}] service.requests.size=[{}]", service.waiting.size(), service.requests.size());
             sendToWorker(worker, MDP.W_REQUEST, null, msg);
             msg.destroy();
-            */
-            Worker worker = service.waiting.pop();
-            do {
-                log.debug("I:dispatch service.requests.size=[{}] dispatch 1 msg", service.requests.size());
-                msg = service.requests.pop();
-                sendToWorker(worker, MDP.W_REQUEST, null, msg);
-                msg.destroy();
-            } while (!service.requests.isEmpty());
-            log.debug("I:dispatch remove work from waiting queue");
-            waiting.remove(worker);
         }
     }
 
@@ -442,8 +437,10 @@ public class mdbroker  implements Runnable {
         if (verbose) {
             log.debug("I: sending [{}] to worker", command);
             //msg.dump(log.out());
+            //20220727
+            log.debug("ZMsg:{}", msg.toString());
         }
-        msg.send(socket);
+        msg.send(socket, true); //20220727 change msg.send(socket); to msg.send(socket, true);
     }
 }
 

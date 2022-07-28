@@ -1,6 +1,6 @@
 package com.systex.sysgateii.comm.mdp;
 
-import java.util.Formatter;
+//import java.util.Formatter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -106,8 +106,9 @@ public class mdcliapi2 {
 		if (verbose) {
 			log.debug("I: send request to '{}' service:", service);
 			//request.dump(log.out());
+			log.debug("ZMsg:{}", request.toString());
 		}
-		return request.send(client);
+		return request.send(client, true); //20220727 equest.send(client); change to equest.send(client, true);
 	}
 
 	public void destroy() {

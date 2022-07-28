@@ -1,14 +1,15 @@
 package com.systex.sysgateii.comm.mdp;
 
-import java.util.Formatter;
-
 import org.zeromq.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Majordomo Protocol Client API, Java version Implements the MDP/Worker spec at
  * http://rfc.zeromq.org/spec:7.
  */
 public class mdwrkapi {
+    private static Logger log = LoggerFactory.getLogger(mdwrkapi.class);
 
     private static final int HEARTBEAT_LIVENESS = 3; // 3-5 is reasonable
 
@@ -27,12 +28,13 @@ public class mdwrkapi {
 
     private long timeout = 2500;
     private boolean verbose; // Print activity to stdout
-    private Formatter log = new Formatter(System.out);
+    //////private Formatter log = new Formatter(System.out);
 
     // Return address, if any
     private ZFrame replyTo;
 
     public mdwrkapi(String broker, String service, boolean verbose) {
+
         assert (broker != null);
         assert (service != null);
         this.broker = broker;
@@ -61,10 +63,12 @@ public class mdwrkapi {
         msg.addFirst(new ZFrame(ZMQ.MESSAGE_SEPARATOR));
 
         if (verbose) {
-            log.format("I: sending %s to broker\n", command);
-            msg.dump(log.out());
+////            log.format("I: sending %s to broker\n", command);
+////            msg.dump(log.out());
+            log.debug("I: sending {} to broker", command);
+            log.debug("ZMsg:{}", msg.toString());
         }
-        msg.send(worker);
+        msg.send(worker, true);  //20220727 change  from msg.send(worker); to msg.send(worker, true);
     }
 
     /**
@@ -77,7 +81,8 @@ public class mdwrkapi {
         worker = ctx.createSocket(SocketType.DEALER);
         worker.connect(broker);
         if (verbose)
-            log.format("I: connecting to broker at %s\n", broker);
+////           log.format("I: connecting to broker at %s\n", broker);
+            log.debug("I: connecting to broker at {}", broker);
 
         // Register service with broker
         sendToBroker(MDP.W_READY, service, null);
@@ -93,12 +98,18 @@ public class mdwrkapi {
      */
     public ZMsg receive(ZMsg reply) {
 
+        if (verbose) {
+            log.debug("I: receive reply=[{}] expectReply=[{}] timeout=[{}] heartbeat=[{}] HEARTBEAT_LIVENESS=[{}] reconnect=[{}]", (reply == null ? "null": "not null"), expectReply, timeout, heartbeat, HEARTBEAT_LIVENESS, reconnect);
+        }
         // Format and send the reply if we were provided one
         assert (reply != null || !expectReply);
 
         if (reply != null) {
             assert (replyTo != null);
 	    //log.format("I: replyTo=[%s]\n", replyTo.toString());
+            if (verbose) {
+                log.debug("I: ZFrame:replyTo=[{}]", reply.toString());
+            }
             reply.wrap(replyTo);
             sendToBroker(MDP.W_REPLY, null, reply);
             reply.destroy();
@@ -111,15 +122,16 @@ public class mdwrkapi {
             items.register(worker, ZMQ.Poller.POLLIN);
             if (items.poll(timeout) == -1)
                 break; // Interrupted
-
             if (items.pollin(0)) {
                 ZMsg msg = ZMsg.recvMsg(worker);
                 if (msg == null)
                     break; // Interrupted
                 if (verbose) {
-                    log.format("I: received message from broker: \n");
-                    msg.dump(log.out());
-                }
+////                    log.format("I: received message from broker: \n");
+////                    msg.dump(log.out());
+                    log.debug("I: received message from broker:");
+                    log.debug("ZMsg:{}", msg.toString());
+                 }
                 liveness = HEARTBEAT_LIVENESS;
                 // Don't try to handle errors, just assert noisily
                 assert (msg != null && msg.size() >= 3);
@@ -142,16 +154,19 @@ public class mdwrkapi {
                 } else if (MDP.W_HEARTBEAT.frameEquals(command)) {
                     // Do nothing for heartbeats
                 } else if (MDP.W_DISCONNECT.frameEquals(command)) {
-                    reconnectToBroker();
+                     reconnectToBroker();
                 } else {
-                    log.format("E: invalid input message: \n");
-                    msg.dump(log.out());
+////                    log.format("E: invalid input message: \n");
+////                    msg.dump(log.out());
+                    log.debug("E: invalid input message:"); //20220727
+                    log.debug("ZMsg:{}",msg.toString());
                 }
                 command.destroy();
                 msg.destroy();
             } else if (--liveness == 0) {
                 if (verbose)
-                    log.format("W: disconnected from broker - retrying\n");
+////                    log.format("W: disconnected from broker - retrying\n");
+                    log.error("W: disconnected from broker - retrying");
                 try {
                     Thread.sleep(reconnect);
                 } catch (InterruptedException e) {
@@ -160,7 +175,6 @@ public class mdwrkapi {
                     break;
                 }
                 reconnectToBroker();
-
             }
             // Send HEARTBEAT if it's time
             if (System.currentTimeMillis() > heartbeatAt) {
@@ -170,7 +184,8 @@ public class mdwrkapi {
             items.close();
         }
         if (Thread.currentThread().isInterrupted())
-            log.format("W: interrupt received, killing worker\n");
+////            log.format("W: interrupt received, killing worker\n");
+            log.error("W: interrupt received, killing worker");
         return null;
     }
 
@@ -201,6 +216,15 @@ public class mdwrkapi {
 
     public void setReplyTo(ZFrame replyTo) {
         this.replyTo = replyTo;
+    }
+
+    //20220728
+    public long getTimeout() {
+        return this.timeout;
+    }
+
+    public void setTimeout(long timeout) {
+        this.timeout = timeout;
     }
 
 }
