@@ -156,6 +156,7 @@ public class mdbroker  implements Runnable {
 
 				if (verbose) {
 					log.debug("I: received message:");
+                    log.debug("I: ZMsg:{}", msg.toString());
 					//msg.dump(log.out());
 				}
 

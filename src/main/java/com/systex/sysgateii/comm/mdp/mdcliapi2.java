@@ -70,18 +70,18 @@ public class mdcliapi2 {
 
 			ZMsg msg = ZMsg.recvMsg(client);
 			// Don't try to handle errors, just assert noisily
-			assert (msg.size() >= 4);
+			//assert (msg.size() >= 4);
 
 			ZFrame empty = msg.pop();
 			assert (empty.getData().length == 0);
 			empty.destroy();
 
-			ZFrame header = msg.pop();
-			assert (MDP.C_CLIENT.equals(header.toString()));
-			header.destroy();
+			//ZFrame header = msg.pop();
+			//assert (MDP.C_CLIENT.equals(header.toString()));
+			//header.destroy();
 
-			ZFrame replyService = msg.pop();
-			replyService.destroy();
+			//ZFrame replyService = msg.pop();
+			//replyService.destroy();
 
 			reply = msg;
 		}
@@ -100,9 +100,9 @@ public class mdcliapi2 {
 		// Frame 0: empty (REQ emulation)
 		// Frame 1: "MDPCxy" (six bytes, MDP/Client x.y)
 		// Frame 2: Service name (printable string)
-		request.addFirst(service);
-		request.addFirst(MDP.C_CLIENT.newFrame());
-		request.addFirst("");
+		//request.addFirst(service);
+		//request.addFirst(MDP.C_CLIENT.newFrame());
+		//request.addFirst("");
 		if (verbose) {
 			log.debug("I: send request to '{}' service:", service);
 			//request.dump(log.out());

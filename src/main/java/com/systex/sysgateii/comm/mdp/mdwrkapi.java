@@ -3,6 +3,7 @@ package com.systex.sysgateii.comm.mdp;
 import org.zeromq.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.Random;
 
 /**
  * Majordomo Protocol Client API, Java version Implements the MDP/Worker spec at
@@ -12,6 +13,7 @@ public class mdwrkapi {
     private static Logger log = LoggerFactory.getLogger(mdwrkapi.class);
 
     private static final int HEARTBEAT_LIVENESS = 3; // 3-5 is reasonable
+    private final static String WORKER_READY = "\001"; // Signals worker is ready
 
     private String broker;
     private ZContext ctx;
@@ -54,17 +56,7 @@ public class mdwrkapi {
     void sendToBroker(MDP command, String option, ZMsg msg) {
         msg = msg != null ? msg.duplicate() : new ZMsg();
 
-        // Stack protocol envelope to start of message
-        if (option != null)
-            msg.addFirst(new ZFrame(option));
-
-        msg.addFirst(command.newFrame());
-        msg.addFirst(MDP.W_WORKER.newFrame());
-        msg.addFirst(new ZFrame(ZMQ.MESSAGE_SEPARATOR));
-
         if (verbose) {
-////            log.format("I: sending %s to broker\n", command);
-////            msg.dump(log.out());
             log.debug("I: sending {} to broker", command);
             log.debug("ZMsg:{}", msg.toString());
         }
@@ -79,13 +71,14 @@ public class mdwrkapi {
             worker.close();
         }
         worker = ctx.createSocket(SocketType.DEALER);
+        Random rand = new Random(System.nanoTime());
+        String identity = String.format("%04X-%04X", rand.nextInt(0x10000), rand.nextInt(0x10000));
+        worker.setIdentity(identity.getBytes(ZMQ.CHARSET));
         worker.connect(broker);
         if (verbose)
-////           log.format("I: connecting to broker at %s\n", broker);
             log.debug("I: connecting to broker at {}", broker);
-
-        // Register service with broker
-        sendToBroker(MDP.W_READY, service, null);
+        ZFrame frame = new ZFrame(WORKER_READY);
+        frame.send(worker, 0);
 
         // If liveness hits zero, queue is considered disconnected
         liveness = HEARTBEAT_LIVENESS;
@@ -103,10 +96,8 @@ public class mdwrkapi {
         }
         // Format and send the reply if we were provided one
         assert (reply != null || !expectReply);
-
         if (reply != null) {
             assert (replyTo != null);
-	    //log.format("I: replyTo=[%s]\n", replyTo.toString());
             if (verbose) {
                 log.debug("I: ZFrame:replyTo=[{}]", reply.toString());
             }
@@ -127,24 +118,27 @@ public class mdwrkapi {
                 if (msg == null)
                     break; // Interrupted
                 if (verbose) {
-////                    log.format("I: received message from broker: \n");
-////                    msg.dump(log.out());
                     log.debug("I: received message from broker:");
                     log.debug("ZMsg:{}", msg.toString());
                  }
-                liveness = HEARTBEAT_LIVENESS;
+                //liveness = HEARTBEAT_LIVENESS;
                 // Don't try to handle errors, just assert noisily
-                assert (msg != null && msg.size() >= 3);
+                //assert (msg != null && msg.size() >= 3);
+                assert (msg != null && msg.size() >= 2);
 
                 ZFrame empty = msg.pop();
                 assert (empty.getData().length == 0);
                 empty.destroy();
 
-                ZFrame header = msg.pop();
-                assert (MDP.W_WORKER.frameEquals(header));
-                header.destroy();
+                //ZFrame header = msg.pop();
+                //assert (MDP.W_WORKER.frameEquals(header));
+                //header.destroy();
 
-                ZFrame command = msg.pop();
+                //ZFrame command = msg.pop();
+                replyTo = msg.unwrap();
+                return msg; // We have a request to process
+            }
+                /*
                 if (MDP.W_REQUEST.frameEquals(command)) {
                     // We should pop and save as many addresses as there are
                     // up to a null part, but for now, just save one
@@ -180,11 +174,10 @@ public class mdwrkapi {
             if (System.currentTimeMillis() > heartbeatAt) {
                 sendToBroker(MDP.W_HEARTBEAT, null, null);
                 heartbeatAt = System.currentTimeMillis() + heartbeat;
-            }
+            }*/
             items.close();
         }
         if (Thread.currentThread().isInterrupted())
-////            log.format("W: interrupt received, killing worker\n");
             log.error("W: interrupt received, killing worker");
         return null;
     }
@@ -227,5 +220,12 @@ public class mdwrkapi {
         this.timeout = timeout;
     }
 
+/*    //20220801 MatsudairaSyuMe add for hheartbeat
+    public void chkHeartbeat() {
+        if (System.currentTimeMillis() > heartbeatAt) {
+            sendToBroker(MDP.W_HEARTBEAT, null, null);
+            heartbeatAt = System.currentTimeMillis() + heartbeat;
+        }
+    }*/
 }
 

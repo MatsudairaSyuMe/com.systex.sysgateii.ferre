@@ -41,8 +41,6 @@ public class mdworker2 implements IDetachedRunnable {
     @Override
     public void run(Object[] args) {
 		mdwrkapi workerSession = new mdwrkapi(backend, service, verbose);
-		workerSession.setHeartbeat(2000);  //20220728 MatsudairaSyuMe
-		workerSession.setTimeout(2000);  //20220728 MatsudairaSyuMe
 
 		ZMsg reply = null;
 		while (true) {
@@ -72,13 +70,15 @@ public class mdworker2 implements IDetachedRunnable {
 							Thread.sleep(this.retryInterval);
 						} catch (InterruptedException e) {
 						}
+						//workerSession.chkHeartbeat();
 					}
 				} while (++reTry < this.totalReTryTime);
 			else
 				resultmsg = dispatcher.mkE002(telegramKey);  //20220715 MatsudairaSyuMe format error or connect error
-			//202206722 MatsudairaSyuME check if timeout
+			//20220729 MatsudairaSyuME check if timeout
 			if (resultmsg == null || reTry >= this.totalReTryTime) {
 				log.error("I: {} getResultTelegram timeout !!!! request address [{}]", this.workname, clientAddress.toString());
+				workerSession.reconnectToBroker(); // reconnect to broker //20220729 MatsudairaSyuMe
 			}
 			//----
 			request.addFirst(new ZFrame(resultmsg));
