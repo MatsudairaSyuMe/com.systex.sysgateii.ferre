@@ -81,7 +81,8 @@ public class spqueue  implements Runnable {
             	if (new String(frame.getData(), ZMQ.CHARSET).equals(WORKER_READY))
             		msg.destroy();
             	else {
-                    log.debug("I: send message message to frontend backend:ZMsg:{}", msg.toString());
+                    if (verbose)
+                        log.debug("I: send message message to frontend backend:ZMsg:{}", msg.toString());
             		msg.send(frontend);
                 }
             }
