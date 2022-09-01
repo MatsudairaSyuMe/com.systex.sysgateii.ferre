@@ -26,6 +26,7 @@ public class spqueue  implements Runnable {
 	private ZMQ.Socket backend; // Socket for backend
 	private boolean verbose = false; // Print activity to stdout
 	private final static String WORKER_READY = "\001"; // Signals worker is ready
+    private final static String IGNORE_MSG = "\004"; // 20220805 Signals form drops this msg
 
 	public spqueue(boolean verbose) {
 		this.verbose = verbose;
@@ -80,10 +81,18 @@ public class spqueue  implements Runnable {
             	ZFrame frame = msg.getFirst();
             	if (new String(frame.getData(), ZMQ.CHARSET).equals(WORKER_READY))
             		msg.destroy();
-            	else {
-                    if (verbose)
-                        log.debug("I: send message message to frontend backend:ZMsg:{}", msg.toString());
-            		msg.send(frontend);
+                else {
+                    //20220805 MatsudairaSyuMe
+                    ZFrame lastframe = msg.getLast();
+                    if (new String(lastframe.getData(), ZMQ.CHARSET).equals(IGNORE_MSG)) {
+                        if (verbose) 
+                            log.debug("I: receive ignore message from backend ZMsg:{}", msg.toString());
+                        msg.destroy();
+                    } else {
+                        if (verbose)
+                            log.debug("I: receive from backend and send message to frontend ZMsg:{}", msg.toString());
+                        msg.send(frontend);
+                    }
                 }
             }
             if (workersAvailable && poller.pollin(1)) {

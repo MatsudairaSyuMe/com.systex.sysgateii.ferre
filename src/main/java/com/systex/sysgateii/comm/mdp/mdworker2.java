@@ -25,6 +25,8 @@ public class mdworker2 implements IDetachedRunnable {
     private long timeout = TOTAL_TIMEOUT;
     private static final long RETRY_INTERVAL = 1000; // msecs
     private long retryInterval = RETRY_INTERVAL;
+    private final static String IGNORE_MSG = "\004"; // 20220805 Signals form drops this msg
+
     private int totalReTryTime = (int) (timeout / retryInterval);
     public mdworker2(String  workname, String backend, String service, long timeout, int retryInterval, FASSvr dispatcher, boolean verbose) {
         this.workname = workname;
@@ -79,6 +81,7 @@ public class mdworker2 implements IDetachedRunnable {
 			if (resultmsg == null || reTry >= this.totalReTryTime) {
 				log.error("I: {} getResultTelegram timeout !!!! request address [{}]", this.workname, clientAddress.toString());
 				//workerSession.reconnectToBroker(); // reconnect to broker //20220729 MatsudairaSyuMe
+				resultmsg = IGNORE_MSG.getBytes();  //20220805 MatsudairaSyuMe
 			}
 			//----
 			request.addFirst(new ZFrame(resultmsg));
